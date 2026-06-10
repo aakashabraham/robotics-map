@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FTC Premier Istanbul 2025 · World Teams</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --cyan:    #00d4ff;
+      --purple:  #7b2fff;
+      --magenta: #ff2d78;
+      --bg:      #04040f;
+      --bg2:     #080c1e;
+      --panel:   rgba(6, 9, 22, 0.97);
+      --border:  rgba(0, 212, 255, 0.22);
+      --text:    #b8cce8;
+      --bright:  #e2efff;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ─── HEADER ───────────────────────────────────── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 58px; z-index: 1000;
+      background: linear-gradient(135deg, rgba(4,4,15,0.98) 0%, rgba(10,7,24,0.98) 100%);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(24px);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      animation: fadeUp 0.5s ease both;
+    }
+    #header::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--cyan) 30%, var(--purple) 70%, transparent 100%);
+      opacity: 0.6;
+    }
+
+    .h-logo { display: flex; align-items: center; gap: 14px; }
+    .h-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px; font-weight: 700;
+      color: var(--cyan);
+      border: 1px solid rgba(0,212,255,0.4);
+      padding: 4px 10px; border-radius: 3px;
+      text-shadow: 0 0 12px var(--cyan);
+      box-shadow: inset 0 0 8px rgba(0,212,255,0.05), 0 0 8px rgba(0,212,255,0.08);
+      letter-spacing: 2px;
+    }
+    .h-title { display: flex; flex-direction: column; gap: 1px; }
+    .h-title h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--bright); letter-spacing: 3px;
+    }
+    .h-title p {
+      font-size: 9px; color: var(--cyan);
+      letter-spacing: 4px; text-transform: uppercase; opacity: 0.75;
+    }
+
+    .h-stats { display: flex; gap: 12px; align-items: center; }
+    .stat-card {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 5px 18px;
+      background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border); border-radius: 3px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0.4;
+    }
+    .stat-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px; font-weight: 900; line-height: 1;
+      color: var(--cyan); text-shadow: 0 0 14px var(--cyan);
+    }
+    .stat-lbl {
+      font-size: 8px; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--text);
+      margin-top: 2px; opacity: 0.8;
+    }
+
+    .h-search {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 6px 12px;
+    }
+    .h-search input {
+      background: none; border: none; outline: none;
+      color: var(--bright); font-family: 'Exo 2', sans-serif;
+      font-size: 12px; width: 160px;
+    }
+    .h-search input::placeholder { color: rgba(184,204,232,0.35); }
+    .h-search svg { opacity: 0.4; flex-shrink: 0; }
+
+    /* ─── SCANLINES ──────────────────────────────── */
+    #scanlines {
+      position: fixed; inset: 58px 0 0 0; z-index: 2;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
+      );
+    }
+
+    /* ─── MAP ────────────────────────────────────── */
+    #map {
+      position: fixed; top: 58px; left: 0; right: 0; bottom: 0; z-index: 1;
+    }
+    .leaflet-container { background: #03030c; }
+    .leaflet-control-zoom {
+      border: 1px solid var(--border) !important;
+      background: var(--panel) !important;
+      border-radius: 3px !important;
+      box-shadow: none !important;
+    }
+    .leaflet-control-zoom a {
+      background: transparent !important;
+      color: var(--cyan) !important;
+      border-bottom: 1px solid var(--border) !important;
+      width: 28px !important; height: 28px !important;
+      line-height: 28px !important; font-size: 16px !important;
+    }
+    .leaflet-control-zoom a:last-child { border-bottom: none !important; }
+    .leaflet-control-zoom a:hover { background: rgba(0,212,255,0.1) !important; }
+    .leaflet-control-attribution {
+      background: rgba(4,4,15,0.75) !important;
+      color: rgba(184,204,232,0.3) !important;
+      font-size: 8px !important;
+    }
+    .leaflet-control-attribution a { color: rgba(0,212,255,0.4) !important; }
+
+    /* ─── CLUSTERS ───────────────────────────────── */
+    .cluster-wrap { background: transparent; border: none; }
+    .cluster-inner {
+      width: 36px; height: 36px;
+      background: rgba(0,212,255,0.08);
+      border: 1.5px solid rgba(0,212,255,0.55);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+      color: var(--cyan); text-shadow: 0 0 8px var(--cyan);
+      box-shadow: 0 0 14px rgba(0,212,255,0.2), inset 0 0 10px rgba(0,212,255,0.06);
+    }
+    .cluster-inner.lg {
+      width: 44px; height: 44px; font-size: 13px;
+    }
+
+    /* ─── MARKERS ───────────────────────────────── */
+    .pin-wrap {
+      position: relative; width: 22px; height: 22px; cursor: pointer;
+    }
+    .pin-dot {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height: 9px;
+      background: var(--cyan); border-radius: 50%;
+      box-shadow: 0 0 6px var(--cyan), 0 0 14px var(--cyan);
+      z-index: 2;
+      transition: width 0.45s ease, height 0.45s ease,
+                  background 0.45s ease, box-shadow 0.45s ease,
+                  opacity 0.45s ease;
+    }
+    .pin-ring {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 9px; height: 9px;
+      border: 1.5px solid var(--cyan); border-radius: 50%;
+      animation: pinPulse 2.4s ease-out infinite;
+      transition: opacity 0.4s ease, border-color 0.4s ease;
+    }
+    .pin-ring.r2 { animation-delay: 1.2s; }
+    @keyframes pinPulse {
+      0%   { transform: translate(-50%,-50%) scale(1); opacity: 0.7; }
+      100% { transform: translate(-50%,-50%) scale(4); opacity: 0; }
+    }
+    /* Manual-click active */
+    .pin-wrap.active .pin-dot {
+      background: var(--magenta);
+      box-shadow: 0 0 8px var(--magenta), 0 0 20px var(--magenta);
+      width: 12px; height: 12px;
+    }
+    .pin-wrap.active .pin-ring { border-color: var(--magenta); }
+
+    /* ─── SPOTLIGHT MODE — dim all normal pins ─── */
+    #map.spotlight-mode .pin-dot {
+      background: rgba(0,212,255,0.12) !important;
+      box-shadow: none !important;
+      width: 6px !important; height: 6px !important;
+      opacity: 0.4 !important;
+    }
+    #map.spotlight-mode .pin-ring {
+      opacity: 0 !important;
+    }
+    /* Also dim cluster bubbles */
+    #map.spotlight-mode .cluster-inner {
+      opacity: 0.2 !important;
+      transition: opacity 0.45s ease;
+    }
+
+    /* ─── SPOTLIGHT BEACON (separate class names — immune to dim rules) ─── */
+    .spotlight-beacon {
+      position: relative; width: 38px; height: 38px;
+      pointer-events: none;
+    }
+    .sb-dot {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 11px; height: 11px;
+      background: var(--magenta); border-radius: 50%;
+      box-shadow:
+        0 0 8px var(--magenta),
+        0 0 20px var(--magenta),
+        0 0 38px rgba(255,45,120,0.5);
+      z-index: 3;
+    }
+    .sb-ring {
+      position: absolute; top: 50%; left: 50%;
+      border: 1.5px solid var(--magenta); border-radius: 50%;
+      width: 11px; height: 11px;
+      animation: sbPulse 2.1s ease-out infinite;
+    }
+    .sb-ring.r2 { animation-delay: 0.7s; }
+    .sb-ring.r3 { animation-delay: 1.4s; }
+    @keyframes sbPulse {
+      0%   { transform: translate(-50%,-50%) scale(1); opacity: 0.85; }
+      100% { transform: translate(-50%,-50%) scale(5); opacity: 0; }
+    }
+
+
+    /* ─── SIDE PANEL ─────────────────────────────── */
+    #side-panel {
+      position: fixed; top: 58px; right: -400px; bottom: 0;
+      width: 380px; z-index: 500;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      transition: right 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #side-panel.open { right: 0; }
+    #side-panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; bottom: 0; width: 1px;
+      background: linear-gradient(180deg, var(--cyan), var(--purple), transparent);
+      opacity: 0.5;
+    }
+
+    .sp-header {
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--border);
+      position: relative; flex-shrink: 0;
+    }
+    .sp-header::after {
+      content: ''; position: absolute;
+      bottom: -1px; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, var(--cyan), transparent);
+      opacity: 0.4;
+    }
+    .sp-close {
+      position: absolute; top: 18px; right: 18px;
+      width: 28px; height: 28px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid var(--border); border-radius: 3px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text); font-size: 13px; transition: all 0.2s; user-select: none;
+    }
+    .sp-close:hover { background: rgba(0,212,255,0.14); color: var(--cyan); border-color: var(--cyan); }
+
+    .sp-tag {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px; font-weight: 400;
+      color: var(--cyan); letter-spacing: 4px; opacity: 0.7; margin-bottom: 6px;
+    }
+    .sp-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 19px; font-weight: 700; color: var(--bright);
+      line-height: 1.25; margin-bottom: 10px;
+      text-shadow: 0 0 24px rgba(0,212,255,0.15);
+    }
+    .sp-location {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 12px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid var(--border); border-radius: 3px;
+      font-size: 12px; font-weight: 500;
+    }
+    .sp-flag { font-size: 16px; }
+
+    .sp-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+    .sp-body::-webkit-scrollbar { width: 3px; }
+    .sp-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .sp-num-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 72px; font-weight: 900; line-height: 1;
+      color: var(--cyan); opacity: 0.06;
+      margin: 10px 0 2px; user-select: none; pointer-events: none;
+      letter-spacing: -2px;
+    }
+    .sp-num-real {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 38px; font-weight: 900; line-height: 1;
+      color: var(--cyan); text-shadow: 0 0 20px rgba(0,212,255,0.4);
+      margin-top: -64px; margin-bottom: 20px;
+    }
+
+    .divider {
+      height: 1px; margin: 16px 0;
+      background: linear-gradient(90deg, rgba(0,212,255,0.3), transparent);
+    }
+
+    .sp-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 20px;
+    }
+    .sp-data-card {
+      background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 10px 12px;
+    }
+    .sp-data-card .lbl {
+      font-size: 8px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--cyan); opacity: 0.55; margin-bottom: 4px;
+    }
+    .sp-data-card .val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px; font-weight: 600; color: var(--bright);
+    }
+
+    .info-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .info-lbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--cyan); opacity: 0.6; }
+    .info-val { font-size: 13px; font-weight: 500; color: var(--bright); }
+
+    .sp-btn {
+      display: block; width: 100%; padding: 13px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(123,47,255,0.08));
+      border: 1px solid var(--border); border-radius: 4px;
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px; font-weight: 600; letter-spacing: 2.5px;
+      text-transform: uppercase; text-decoration: none; text-align: center;
+      cursor: pointer; transition: all 0.22s; margin-top: 4px;
+    }
+    .sp-btn:hover {
+      background: linear-gradient(135deg, rgba(0,212,255,0.16), rgba(123,47,255,0.16));
+      border-color: rgba(0,212,255,0.5);
+      box-shadow: 0 0 20px rgba(0,212,255,0.12);
+    }
+
+    /* ─── CITY FILTER PANEL ──────────────────────── */
+    #city-panel {
+      position: fixed; top: 58px; left: 0; bottom: 0;
+      width: 240px; z-index: 400;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      transform: translateX(-100%);
+      transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    #city-panel.open { transform: translateX(0); }
+    #city-panel::after {
+      content: ''; position: absolute;
+      top: 0; right: 0; bottom: 0; width: 1px;
+      background: linear-gradient(180deg, var(--cyan), var(--purple), transparent);
+      opacity: 0.4;
+    }
+
+    .cp-header {
+      padding: 16px 16px 10px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .cp-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px; letter-spacing: 3px; color: var(--cyan);
+      opacity: 0.75; text-transform: uppercase;
+    }
+    .cp-subtitle { font-size: 10px; color: var(--text); opacity: 0.5; margin-top: 3px; }
+
+    /* Search within panel */
+    .cp-search {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .cp-search input {
+      width: 100%; background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 5px 9px; outline: none;
+      color: var(--bright); font-family: 'Exo 2', sans-serif; font-size: 11px;
+    }
+    .cp-search input::placeholder { color: rgba(184,204,232,0.3); }
+
+    .cp-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .cp-list::-webkit-scrollbar { width: 3px; }
+    .cp-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .cp-all {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px 7px; cursor: pointer;
+      border-bottom: 1px solid var(--border); margin-bottom: 4px;
+      transition: background 0.15s;
+    }
+    .cp-all:hover { background: rgba(0,212,255,0.05); }
+    .cp-all-dot {
+      width: 8px; height: 8px;
+      background: var(--cyan); border-radius: 50%;
+      box-shadow: 0 0 6px var(--cyan);
+    }
+    .cp-all-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px; color: var(--cyan); letter-spacing: 2px;
+    }
+
+    .cp-item {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 7px 16px; cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .cp-item:hover { background: rgba(0,212,255,0.05); border-left-color: rgba(0,212,255,0.3); }
+    .cp-item.active { background: rgba(0,212,255,0.09); border-left-color: var(--cyan); }
+    .cp-item.hidden { display: none; }
+
+    .cp-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .cp-city { font-size: 12px; color: var(--bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-country-lbl { font-size: 9px; color: var(--text); opacity: 0.55; }
+    .cp-count {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px; color: var(--cyan); opacity: 0.65;
+      flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* ─── FLOATING BUTTONS ───────────────────────── */
+    .float-btn {
+      position: fixed; z-index: 600;
+      padding: 9px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border); border-radius: 3px;
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; gap: 8px;
+      user-select: none;
+    }
+    .float-btn:hover {
+      background: rgba(0,212,255,0.1);
+      border-color: rgba(0,212,255,0.45);
+      box-shadow: 0 0 14px rgba(0,212,255,0.1);
+    }
+    #btn-spotlight { bottom: 24px; right: 24px; }
+    #btn-cities  { bottom: 24px; left: 24px; }
+    #btn-reset   { bottom: 24px; left: 160px; opacity: 0; pointer-events: none; transition: opacity 0.2s, left 0.25s; }
+    #btn-reset.show { opacity: 1; pointer-events: all; }
+
+    /* Corner decorations */
+    .corner { position: fixed; z-index: 900; pointer-events: none; }
+    .corner::before, .corner::after { content: ''; position: absolute; background: var(--cyan); opacity: 0.4; }
+    .corner.tl { top: 66px; left: 6px; } .corner.tr { top: 66px; right: 6px; }
+    .corner.bl { bottom: 6px; left: 6px; } .corner.br { bottom: 6px; right: 6px; }
+    .corner::before { width: 10px; height: 1px; } .corner::after { width: 1px; height: 10px; }
+    .corner.tl::before { top: 0; left: 0; } .corner.tl::after { top: 0; left: 0; }
+    .corner.tr::before { top: 0; right: 0; } .corner.tr::after { top: 0; right: 0; }
+    .corner.bl::before { bottom: 0; left: 0; } .corner.bl::after { bottom: 0; left: 0; }
+    .corner.br::before { bottom: 0; right: 0; } .corner.br::after { bottom: 0; right: 0; }
+
+    /* ─── LEAFLET POPUP OVERRIDE ─────────────────── */
+    .leaflet-popup-content-wrapper {
+      background: rgba(6,9,22,0.95) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 20px rgba(0,212,255,0.15) !important;
+      color: var(--bright) !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content { margin: 0 !important; padding: 12px 16px !important; font-family: 'Exo 2', sans-serif !important; }
+    .leaflet-popup-tip-container { display: none; }
+    .leaflet-popup-close-button { display: none !important; }
+    .popup-num { font-family: 'Orbitron', sans-serif; font-size: 9px; color: var(--cyan); opacity: 0.7; letter-spacing: 2px; margin-bottom: 3px; }
+    .popup-name { font-size: 13px; font-weight: 600; color: var(--bright); margin-bottom: 4px; white-space: nowrap; }
+    .popup-loc  { font-size: 11px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+
+    /* ─── SEARCH RESULTS ─────────────────────────── */
+    #search-results {
+      position: fixed; top: 60px; right: 28px; z-index: 800;
+      width: 230px; max-height: 300px; overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 4px 4px; display: none;
+    }
+    #search-results::-webkit-scrollbar { width: 3px; }
+    #search-results::-webkit-scrollbar-thumb { background: var(--border); }
+    .sr-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(0,212,255,0.06); transition: background 0.1s; }
+    .sr-item:hover { background: rgba(0,212,255,0.08); }
+    .sr-num { font-size: 9px; color: var(--cyan); opacity: 0.6; font-family: 'Orbitron', sans-serif; }
+    .sr-name { font-size: 12px; color: var(--bright); margin-top: 1px; }
+    .sr-loc { font-size: 10px; color: var(--text); opacity: 0.65; margin-top: 1px; }
+
+    /* ─── SPOTLIGHT POPUP ────────────────────────── */
+    .sl-popup .leaflet-popup-content-wrapper {
+      background: rgba(4, 6, 20, 0.97) !important;
+      border: 1px solid var(--cyan) !important;
+      border-radius: 6px !important;
+      box-shadow: 0 0 0 1px rgba(0,212,255,0.08),
+                  0 0 50px rgba(0,212,255,0.3),
+                  0 8px 32px rgba(0,0,0,0.6) !important;
+      padding: 0 !important; min-width: 240px;
+    }
+    .sl-popup .leaflet-popup-content { margin: 0 !important; padding: 0 !important; }
+    .sl-popup .leaflet-popup-tip-container { display: none !important; }
+    .sl-popup .leaflet-popup-close-button { display: none !important; }
+
+    .sl-card {
+      padding: 18px 20px 14px;
+      position: relative; overflow: hidden;
+    }
+    .sl-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0.7;
+    }
+    .sl-card-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px; color: var(--cyan);
+      letter-spacing: 3px; opacity: 0.9;
+      margin-bottom: 7px;
+      display: flex; align-items: center; gap: 8px;
+      text-shadow: 0 0 10px var(--cyan);
+    }
+    .sl-live-dot {
+      width: 6px; height: 6px;
+      background: var(--cyan); border-radius: 50%;
+      box-shadow: 0 0 6px var(--cyan);
+      animation: livePulse 1.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+    .sl-card-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 17px; font-weight: 700; color: var(--bright);
+      line-height: 1.25; margin-bottom: 12px;
+    }
+    .sl-card-sep {
+      height: 1px; margin-bottom: 10px;
+      background: linear-gradient(90deg, rgba(0,212,255,0.4), transparent);
+    }
+    .sl-card-city {
+      font-size: 12px; font-weight: 500; color: var(--text);
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 10px;
+    }
+    .sl-card-city .flag { font-size: 15px; }
+    .sl-card-badge {
+      display: inline-block;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px; letter-spacing: 2px;
+      color: var(--cyan); opacity: 0.55;
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 2px; padding: 2px 7px;
+    }
+
+    /* ─── SPOTLIGHT CONTROLS BAR ──────────────────── */
+    #spotlight-bar {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      z-index: 700;
+      background: rgba(6, 9, 22, 0.97);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 10px;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    #spotlight-bar::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), transparent);
+      opacity: 0.5; border-radius: 6px 6px 0 0;
+    }
+    #spotlight-bar.active { transform: translateX(-50%) translateY(0); }
+
+    .sl-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px; color: var(--cyan); opacity: 0.55;
+      letter-spacing: 2.5px; white-space: nowrap;
+    }
+    .sl-btn {
+      width: 30px; height: 30px;
+      background: rgba(0,212,255,0.07);
+      border: 1px solid var(--border); border-radius: 3px;
+      color: var(--cyan); font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .sl-btn:hover { background: rgba(0,212,255,0.16); border-color: var(--cyan); }
+    .sl-btn.main { width: 36px; height: 36px; font-size: 15px; }
+    .sl-counter {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 10px; color: var(--cyan); letter-spacing: 1px;
+      white-space: nowrap; min-width: 52px; text-align: center;
+    }
+    .sl-prog-track {
+      flex: 1; height: 2px; min-width: 80px;
+      background: rgba(0,212,255,0.1); border-radius: 1px; overflow: hidden;
+    }
+    .sl-prog-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      box-shadow: 0 0 6px var(--cyan); border-radius: 1px;
+    }
+    .sl-close {
+      width: 26px; height: 26px;
+      background: rgba(255,45,120,0.07);
+      border: 1px solid rgba(255,45,120,0.25); border-radius: 3px;
+      color: var(--magenta); font-size: 11px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .sl-close:hover { background: rgba(255,45,120,0.18); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <header id="header">
+    <div class="h-logo">
+      <div class="h-badge">FTC</div>
+      <div class="h-title">
+        <h1>Premier Istanbul 2025</h1>
+        <p>Global Team Registry</p>
+      </div>
+    </div>
+    <div class="h-search">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <circle cx="7" cy="7" r="5" stroke="#00d4ff" stroke-width="1.5"/>
+        <path d="M11 11L14 14" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="Search team, city, or country…" autocomplete="off" />
+    </div>
+    <div class="h-stats">
+      <div class="stat-card">
+        <span class="stat-num" id="stat-teams">0</span>
+        <span class="stat-lbl">Teams</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="stat-cities">0</span>
+        <span class="stat-lbl">Cities</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="scanlines"></div>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+
+  <div id="map"></div>
+  <div id="search-results"></div>
+
+  <!-- City filter panel -->
+  <div id="city-panel">
+    <div class="cp-header">
+      <div class="cp-title">Filter by City</div>
+      <div class="cp-subtitle" id="cp-sub">— cities</div>
+    </div>
+    <div class="cp-search">
+      <input type="text" id="city-search" placeholder="Search city…" autocomplete="off" />
+    </div>
+    <div class="cp-list">
+      <div class="cp-all" id="cp-all-btn">
+        <div class="cp-all-dot"></div>
+        <span class="cp-all-lbl">All Teams</span>
+      </div>
+      <div id="cp-items"></div>
+    </div>
+  </div>
+
+  <!-- Team detail panel -->
+  <div id="side-panel">
+    <div class="sp-header">
+      <div class="sp-tag" id="sp-tag">TEAM #—</div>
+      <div class="sp-name" id="sp-name">—</div>
+      <div class="sp-location">
+        <span class="sp-flag" id="sp-flag">🌐</span>
+        <span id="sp-location-text">—</span>
+      </div>
+      <div class="sp-close" id="sp-close">✕</div>
+    </div>
+    <div class="sp-body">
+      <div class="sp-num-display" id="sp-num-bg">—</div>
+      <div class="sp-num-real" id="sp-num">—</div>
+      <div class="divider"></div>
+      <div class="sp-grid">
+        <div class="sp-data-card">
+          <div class="lbl">City</div>
+          <div class="val" id="sp-city-val">—</div>
+        </div>
+        <div class="sp-data-card">
+          <div class="lbl">Country</div>
+          <div class="val" id="sp-country-val">—</div>
+        </div>
+        <div class="sp-data-card">
+          <div class="lbl">Season</div>
+          <div class="val">2024–25</div>
+        </div>
+        <div class="sp-data-card">
+          <div class="lbl">Event</div>
+          <div class="val">FTC Premier IST</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-row">
+        <span class="info-lbl">Event Venue</span>
+        <span class="info-val">Istanbul, Türkiye</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">Program</span>
+        <span class="info-val">FIRST Tech Challenge (FTC)</span>
+      </div>
+      <a class="sp-btn" href="https://ftcpremier.ist/teams/" target="_blank" rel="noopener">
+        ◈ &nbsp;View Full Team Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Spotlight control bar -->
+  <div id="spotlight-bar">
+    <span class="sl-lbl">SPOTLIGHT</span>
+    <div class="sl-btn" id="sl-prev" onclick="slPrev()" title="Previous">&#8592;</div>
+    <div class="sl-btn main" id="sl-playpause" onclick="slTogglePlay()" title="Play / Pause">&#9654;</div>
+    <div class="sl-btn" id="sl-next" onclick="slNext()" title="Next">&#8594;</div>
+    <div class="sl-prog-track"><div class="sl-prog-fill" id="sl-progress"></div></div>
+    <div class="sl-counter" id="sl-counter">1 / 77</div>
+    <div class="sl-close" onclick="slClose()" title="Exit">&#10005;</div>
+  </div>
+
+  <button class="float-btn" id="btn-spotlight" onclick="slStart()" title="Team spotlight">
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+      <circle cx="6" cy="6" r="2.5" fill="#00d4ff"/>
+      <circle cx="6" cy="6" r="4.5" stroke="#00d4ff" stroke-width="1" opacity="0.5"/>
+    </svg>
+    Spotlight
+  </button>
+
+  <button class="float-btn" id="btn-cities" onclick="toggleCityPanel()">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="3" width="14" height="1.5" rx="0.75" fill="#00d4ff"/>
+      <rect x="1" y="7.25" width="10" height="1.5" rx="0.75" fill="#00d4ff"/>
+      <rect x="1" y="11.5" width="12" height="1.5" rx="0.75" fill="#00d4ff"/>
+    </svg>
+    Cities
+  </button>
+  <button class="float-btn" id="btn-reset" onclick="resetFilter()">↺ &nbsp;Show All</button>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script>
+  // ── TEAM DATA (city-accurate coordinates with per-city jitter) ───────────────
+  const TEAMS = [
+    // ── INDEPENDENT (ocean positions — world-zoom spotlight) ──
+    { id:12524, name:"Sputnik Original",          city:"—",              country:"Independent",      flag:"🌐", lat:  8.0, lng:-145.0, slZoom:2 },
+    { id:17517, name:"WoEN: ULT",                 city:"—",              country:"Independent",      flag:"🌐", lat:  2.0, lng: -28.0, slZoom:2 },
+    { id:20042, name:"Time Walk",                 city:"—",              country:"Independent",      flag:"🌐", lat:-18.0, lng:  72.0, slZoom:2 },
+    { id:28419, name:"GearLine",                  city:"—",              country:"Independent",      flag:"🌐", lat:-28.0, lng:-130.0, slZoom:2 },
+    { id:33333, name:"WoEN: AiR",                 city:"—",              country:"Independent",      flag:"🌐", lat: 72.0, lng:  18.0, slZoom:2 },
+
+    // ── CYPRUS — Lakatamia ──
+    { id:13906, name:"Epiteugma Revved Up 1",     city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.135, lng:33.292 },
+    { id:28378, name:"Epiteugma Revved Up Jr 2",  city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.148, lng:33.304 },
+    { id:32881, name:"Epiteugma Gladiators 2",    city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.124, lng:33.310 },
+
+    // ── ROMANIA ──
+    { id:14278, name:"Xeo",                       city:"Alba Iulia",     country:"Romania",          flag:"🇷🇴", lat:46.070, lng:23.580 },
+    { id:15993, name:"infO(1)Robotics",           city:"Ploiești",       country:"Romania",          flag:"🇷🇴", lat:44.943, lng:26.021 },
+    { id:19044, name:"Peppers",                   city:"Iași",           country:"Romania",          flag:"🇷🇴", lat:47.158, lng:27.601 },
+    { id:19054, name:"NeuroBotix",                city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.468, lng:26.115 },
+    { id:19061, name:"Boogeybots",                city:"Râmnicu Sărat",  country:"Romania",          flag:"🇷🇴", lat:45.380, lng:27.053 },
+    { id:19082, name:"RoboAS",                    city:"Brașov",         country:"Romania",          flag:"🇷🇴", lat:45.658, lng:25.601 },
+    { id:19084, name:"Zenith",                    city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.433, lng:26.098 },
+    { id:19141, name:"BraveBots",                 city:"Ploiești",       country:"Romania",          flag:"🇷🇴", lat:44.936, lng:26.035 },
+    { id:19152, name:"Brainstorms",               city:"Zalău",          country:"Romania",          flag:"🇷🇴", lat:47.191, lng:23.056 },
+    { id:22586, name:"CNapSys",                   city:"Zalău",          country:"Romania",          flag:"🇷🇴", lat:47.204, lng:23.072 },
+    { id:24032, name:"Kodikas Robotics",          city:"Brăila",         country:"Romania",          flag:"🇷🇴", lat:45.269, lng:27.957 },
+    { id:24033, name:"Alphatronic",               city:"Cluj-Napoca",    country:"Romania",          flag:"🇷🇴", lat:46.771, lng:23.624 },
+    { id:25225, name:"Afton Robotics",            city:"Hațeg",          country:"Romania",          flag:"🇷🇴", lat:45.603, lng:22.950 },
+    { id:26075, name:"Vampire Robotics",          city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.420, lng:26.108 },
+
+    // ── INDONESIA ──
+    { id:15242, name:"STEAMachine",               city:"Sleman",         country:"Indonesia",        flag:"🇮🇩", lat:-7.717, lng:110.357 },
+    { id:26523, name:"Pandurata",                 city:"Yogyakarta",     country:"Indonesia",        flag:"🇮🇩", lat:-7.796, lng:110.370 },
+
+    // ── SOUTH AFRICA — Cape Town ──
+    { id:17955, name:"Astrovo",                   city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.910, lng:18.418 },
+    { id:19001, name:"SYRE",                      city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.938, lng:18.414 },
+    { id:26695, name:"The Originals",             city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.925, lng:18.444 },
+
+    // ── CHINA — Shanghai ──
+    { id:19666, name:"Forever Knight",            city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.248, lng:121.468 },
+    { id:19683, name:"Rizzler",                   city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.218, lng:121.492 },
+    { id:19859, name:"Reflection",                city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.208, lng:121.452 },
+    { id:22389, name:"AE86",                      city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.240, lng:121.503 },
+    { id:25720, name:"Fatal Nemesis",             city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.200, lng:121.472 },
+
+    // ── VENEZUELA — Maracaibo ──
+    { id:21539, name:"Imagineers",                city:"Maracaibo",      country:"Venezuela",        flag:"🇻🇪", lat:10.671, lng:-71.617 },
+    { id:21552, name:"Astrobots",                 city:"Maracaibo",      country:"Venezuela",        flag:"🇻🇪", lat:10.658, lng:-71.602 },
+
+    // ── USA ──
+    { id:23270, name:"Sounder Bots",              city:"Sammamish",      country:"USA",              flag:"🇺🇸", lat:47.616, lng:-122.036 },
+    { id:23778, name:"Itkan ICQC",                city:"Plano",          country:"USA",              flag:"🇺🇸", lat:33.020, lng:-96.699 },
+    { id:26706, name:"Thunder Lab",               city:"Columbia Falls", country:"USA",              flag:"🇺🇸", lat:48.369, lng:-114.186 },
+
+    // ── ITALY ──
+    { id:23098, name:"PLANCK TEAM",               city:"Villorba",       country:"Italy",            flag:"🇮🇹", lat:45.733, lng:12.283 },
+
+    // ── TÜRKİYE ──
+    { id:24140, name:"Lavender Robotics",         city:"Salihli",        country:"Türkiye",          flag:"🇹🇷", lat:38.482, lng:28.138 },
+    { id:24231, name:"AG Robotik",                city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.022, lng:28.955 },
+    { id:25039, name:"Golden Horn Jr",            city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.010, lng:29.003 },
+    { id:25163, name:"NoktaParantez",             city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.000, lng:28.972 },
+    { id:28743, name:"Jr. AG Robotik",            city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.033, lng:28.982 },
+    { id:29613, name:"Joyful Robotics",           city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:40.988, lng:29.020 },
+    { id:33650, name:"Tulpar FTC",                city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.044, lng:28.934 },
+
+    // ── FRANCE ──
+    { id:24276, name:"Mountain Rocket",           city:"Saint-Jeoire",   country:"France",           flag:"🇫🇷", lat:46.142, lng:6.466 },
+
+    // ── BRAZIL ──
+    { id:24527, name:"Ragnarok",                  city:"Francisco Beltrão", country:"Brazil",        flag:"🇧🇷", lat:-26.081, lng:-53.055 },
+
+    // ── GREECE ──
+    { id:25070, name:"Talos EduRobots",           city:"Ierapetra",      country:"Greece",           flag:"🇬🇷", lat:35.010, lng:25.737 },
+    { id:28490, name:"ThunderBolts",              city:"Thessaloniki",   country:"Greece",           flag:"🇬🇷", lat:40.640, lng:22.944 },
+    { id:28735, name:"Robotek team",              city:"Drama",          country:"Greece",           flag:"🇬🇷", lat:41.154, lng:24.141 },
+    { id:32300, name:"Automatrons",               city:"Vari",           country:"Greece",           flag:"🇬🇷", lat:37.828, lng:23.807 },
+
+    // ── MOLDOVA ──
+    { id:25475, name:"Techno Storm",              city:"Ungheni",        country:"Moldova",          flag:"🇲🇩", lat:47.211, lng:27.794 },
+    { id:25482, name:"SIRIUS",                    city:"Chișinău",       country:"Moldova",          flag:"🇲🇩", lat:47.014, lng:28.857 },
+    { id:25590, name:"RoboRangers",               city:"Chișinău",       country:"Moldova",          flag:"🇲🇩", lat:47.005, lng:28.872 },
+    { id:28675, name:"BrainPower",                city:"Măcărești",      country:"Moldova",          flag:"🇲🇩", lat:47.003, lng:28.465 },
+
+    // ── INDIA ──
+    { id:26438, name:"CROWN",                     city:"Chennai",        country:"India",            flag:"🇮🇳", lat:13.083, lng:80.271 },
+
+    // ── SLOVENIA ──
+    { id:28080, name:"VegaTech",                  city:"Ljubljana",      country:"Slovenia",         flag:"🇸🇮", lat:46.057, lng:14.506 },
+
+    // ── NIGERIA ──
+    { id:23018, name:"CIS-Nexus",                 city:"Lekki",          country:"Nigeria",          flag:"🇳🇬", lat:6.447, lng:3.535 },
+    { id:28343, name:"GSTC Garki",                city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.062, lng:7.491 },
+    { id:28349, name:"The Revolutionaries",       city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.050, lng:7.509 },
+    { id:28634, name:"Robosquad",                 city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.072, lng:7.480 },
+
+    // ── MOROCCO ──
+    { id:28552, name:"3andi Blasti",              city:"Mohammedia",     country:"Morocco",          flag:"🇲🇦", lat:33.686, lng:-7.383 },
+    { id:34010, name:"GoulmimaTeam",              city:"Goulmima",       country:"Morocco",          flag:"🇲🇦", lat:31.690, lng:-4.958 },
+    { id:34030, name:"OmarRobotics",              city:"Casablanca",     country:"Morocco",          flag:"🇲🇦", lat:33.573, lng:-7.590 },
+
+    // ── UNITED KINGDOM ──
+    { id:28575, name:"X_FACTOR ROBOTICS",         city:"Birmingham",     country:"United Kingdom",   flag:"🇬🇧", lat:52.486, lng:-1.890 },
+
+    // ── POLAND ──
+    { id:28788, name:"Rabyte",                    city:"Legionowo",      country:"Poland",           flag:"🇵🇱", lat:52.400, lng:20.933 },
+    { id:31570, name:"Stark Robotics",            city:"Chełm",          country:"Poland",           flag:"🇵🇱", lat:51.134, lng:23.472 },
+
+    // ── UAE ──
+    { id:28831, name:"Orbit",                     city:"Dubai",          country:"UAE",              flag:"🇦🇪", lat:25.209, lng:55.274 },
+    { id:34237, name:"DEADLY",                    city:"Dubai",          country:"UAE",              flag:"🇦🇪", lat:25.198, lng:55.290 },
+
+    // ── QATAR ──
+    { id:28898, name:"Techtops",                  city:"Doha",           country:"Qatar",            flag:"🇶🇦", lat:25.285, lng:51.531 },
+
+    // ── LIBYA ──
+    { id:28918, name:"ULTIMA TEAM",               city:"Sabha",          country:"Libya",            flag:"🇱🇾", lat:27.037, lng:14.429 },
+
+    // ── KAZAKHSTAN ──
+    { id:29382, name:"Flying Penguins",           city:"Astana",         country:"Kazakhstan",       flag:"🇰🇿", lat:51.180, lng:71.446 },
+    { id:32717, name:"ThunderBolts",              city:"Almaty",         country:"Kazakhstan",       flag:"🇰🇿", lat:43.218, lng:76.847 },
+    { id:33422, name:"Sirius",                    city:"Almaty",         country:"Kazakhstan",       flag:"🇰🇿", lat:43.228, lng:76.858 },
+    { id:33624, name:"STRIKE",                    city:"Shymkent",       country:"Kazakhstan",       flag:"🇰🇿", lat:42.300, lng:69.600 },
+
+    // ── CHINESE TAIPEI ──
+    { id:32760, name:"VIS Mars",                  city:"Taipei",         country:"Chinese Taipei",   flag:"🇹🇼", lat:25.033, lng:121.565 },
+
+    // ── HUNGARY ──
+    { id:34097, name:"DELTA",                     city:"Debrecen",       country:"Hungary",          flag:"🇭🇺", lat:47.532, lng:21.627 },
+  ];
+
+  // ── MAP INIT ─────────────────────────────────────────────────────────────────
+  const map = L.map('map', {
+    center: [25, 15], zoom: 2,
+    zoomControl: true, attributionControl: true, minZoom: 2,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd', maxZoom: 19,
+  }).addTo(map);
+
+  map.zoomControl.setPosition('bottomright');
+
+  // ── MARKER FACTORY ───────────────────────────────────────────────────────────
+  // state: '' | 'active' | 'spotlight'
+  function makeIcon(state = '') {
+    if (state === 'spotlight') {
+      return L.divIcon({
+        html: `<div class="spotlight-beacon">
+          <div class="sb-ring"></div>
+          <div class="sb-ring r2"></div>
+          <div class="sb-ring r3"></div>
+          <div class="sb-dot"></div>
+        </div>`,
+        className: '',
+        iconSize: L.point(38, 38),
+        iconAnchor: L.point(19, 19),
+      });
+    }
+    return L.divIcon({
+      html: `<div class="pin-wrap${state ? ' ' + state : ''}">
+        <div class="pin-ring"></div><div class="pin-ring r2"></div>
+        <div class="pin-dot"></div>
+      </div>`,
+      className: '', iconSize: L.point(22, 22), iconAnchor: L.point(11, 11),
+    });
+  }
+
+  // Separate layer for the always-visible spotlight beacon (not in cluster group)
+  const spotlightLayer = L.layerGroup().addTo(map);
+
+  // ── BUILD MARKERS ────────────────────────────────────────────────────────────
+  let activeTeamId = null;
+  const markerMap = {};
+  let clusterGroup = newClusterGroup();
+
+  function newClusterGroup() {
+    return L.markerClusterGroup({
+      iconCreateFunction(cluster) {
+        const n = cluster.getChildCount();
+        const big = n >= 6;
+        const s = big ? 44 : 36;
+        return L.divIcon({
+          html: `<div class="cluster-inner${big ? ' lg' : ''}">${n}</div>`,
+          className: 'cluster-wrap',
+          iconSize: L.point(s, s), iconAnchor: L.point(s/2, s/2),
+        });
+      },
+      maxClusterRadius: 35,
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      animate: true,
+    });
+  }
+
+  function buildMarkers(teams) {
+    map.removeLayer(clusterGroup);
+    clusterGroup = newClusterGroup();
+
+    teams.forEach(team => {
+      const marker = L.marker([team.lat, team.lng], { icon: makeIcon(false), title: team.name });
+
+      marker.on('click', e => {
+        L.DomEvent.stopPropagation(e);
+        if (activeTeamId !== null && markerMap[activeTeamId]) {
+          markerMap[activeTeamId].setIcon(makeIcon());
+        }
+        marker.setIcon(makeIcon('active'));
+        activeTeamId = team.id;
+        map.closePopup();
+        openPanel(team);
+      });
+
+      marker.on('mouseover', function () {
+        const cityLine = team.city !== '—' ? team.city : 'Venue: Istanbul';
+        L.popup({ closeButton: false, offset: [0, -6], autoPan: false })
+          .setLatLng([team.lat, team.lng])
+          .setContent(`
+            <div class="popup-num">TEAM #${team.id}</div>
+            <div class="popup-name">${team.name}</div>
+            <div class="popup-loc">${team.flag} ${cityLine}, ${team.country}</div>
+          `)
+          .openOn(map);
+      });
+      marker.on('mouseout', () => map.closePopup());
+
+      clusterGroup.addLayer(marker);
+      markerMap[team.id] = marker;
+    });
+
+    map.addLayer(clusterGroup);
+  }
+
+  buildMarkers(TEAMS);
+
+  // ── SIDE PANEL ───────────────────────────────────────────────────────────────
+  function openPanel(team) {
+    const locText = team.city !== '—' ? `${team.city}, ${team.country}` : `Independent (Venue: Istanbul)`;
+    document.getElementById('sp-tag').textContent         = `TEAM #${team.id}`;
+    document.getElementById('sp-name').textContent        = team.name;
+    document.getElementById('sp-flag').textContent        = team.flag;
+    document.getElementById('sp-location-text').textContent = locText;
+    document.getElementById('sp-num-bg').textContent      = team.id;
+    document.getElementById('sp-num').textContent         = `#${team.id}`;
+    document.getElementById('sp-city-val').textContent    = team.city !== '—' ? team.city : '(Independent)';
+    document.getElementById('sp-country-val').textContent = team.country;
+    document.getElementById('side-panel').classList.add('open');
+  }
+
+  function closePanel() {
+    document.getElementById('side-panel').classList.remove('open');
+    if (activeTeamId !== null && markerMap[activeTeamId]) {
+      markerMap[activeTeamId].setIcon(makeIcon());
+      activeTeamId = null;
+    }
+  }
+
+  document.getElementById('sp-close').addEventListener('click', closePanel);
+
+  // ── CITY FILTER ───────────────────────────────────────────────────────────────
+  // Group by city (skip "—" independent teams, group them as "Independent")
+  const cityMap = {};
+  TEAMS.forEach(t => {
+    const key = t.city !== '—' ? t.city : '(Independent)';
+    if (!cityMap[key]) cityMap[key] = { count: 0, flag: t.flag, country: t.country, key };
+    cityMap[key].count++;
+    // if multiple countries share a city name, just keep one flag
+  });
+
+  const sortedCities = Object.values(cityMap).sort((a, b) => b.count - a.count);
+  const realCityCount = Object.keys(cityMap).filter(k => k !== '(Independent)').length;
+
+  document.getElementById('cp-sub').textContent = `${realCityCount} cities`;
+  document.getElementById('stat-cities').textContent = 0; // animated below
+
+  function animCount(el, target, duration = 800) {
+    let start = null;
+    const step = ts => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      el.textContent = Math.round(p * target);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  animCount(document.getElementById('stat-teams'), TEAMS.length);
+  animCount(document.getElementById('stat-cities'), realCityCount);
+
+  const cpItems = document.getElementById('cp-items');
+  let activeCity = null;
+
+  sortedCities.forEach(cityData => {
+    const el = document.createElement('div');
+    el.className = 'cp-item';
+    el.dataset.city = cityData.key;
+    el.dataset.search = cityData.key.toLowerCase() + ' ' + cityData.country.toLowerCase();
+    el.innerHTML = `
+      <div class="cp-left">
+        <span class="cp-city">${cityData.key}</span>
+        <span class="cp-country-lbl">${cityData.flag} ${cityData.country}</span>
+      </div>
+      <span class="cp-count">${cityData.count}</span>
+    `;
+    el.addEventListener('click', () => applyFilter(cityData.key));
+    cpItems.appendChild(el);
+  });
+
+  document.getElementById('cp-all-btn').addEventListener('click', resetFilter);
+
+  function applyFilter(city) {
+    activeCity = city;
+    document.querySelectorAll('.cp-item').forEach(el => el.classList.toggle('active', el.dataset.city === city));
+    document.getElementById('btn-reset').classList.add('show');
+
+    const filtered = TEAMS.filter(t => (t.city !== '—' ? t.city : '(Independent)') === city);
+    buildMarkers(filtered);
+
+    if (filtered.length === 1) {
+      map.setView([filtered[0].lat, filtered[0].lng], 10, { animate: true });
+    } else {
+      const bounds = L.latLngBounds(filtered.map(t => [t.lat, t.lng]));
+      map.fitBounds(bounds, { padding: [80, 80], animate: true, maxZoom: 12 });
+    }
+    closePanel();
+  }
+
+  function resetFilter() {
+    activeCity = null;
+    document.querySelectorAll('.cp-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('btn-reset').classList.remove('show');
+    buildMarkers(TEAMS);
+    closePanel();
+  }
+
+  // ── CITY PANEL SEARCH ─────────────────────────────────────────────────────────
+  document.getElementById('city-search').addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    document.querySelectorAll('.cp-item').forEach(el => {
+      el.classList.toggle('hidden', q.length > 0 && !el.dataset.search.includes(q));
+    });
+  });
+
+  // ── CITY PANEL TOGGLE ─────────────────────────────────────────────────────────
+  let cityPanelOpen = false;
+  function toggleCityPanel() {
+    cityPanelOpen = !cityPanelOpen;
+    document.getElementById('city-panel').classList.toggle('open', cityPanelOpen);
+    const offset = cityPanelOpen ? 264 : 24;
+    document.getElementById('btn-cities').style.left = offset + 'px';
+    document.getElementById('btn-reset').style.left  = (offset + 126) + 'px';
+  }
+
+  // ── GLOBAL SEARCH ─────────────────────────────────────────────────────────────
+  const searchInput   = document.getElementById('search-input');
+  const searchResults = document.getElementById('search-results');
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { searchResults.style.display = 'none'; return; }
+    const hits = TEAMS.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.city.toLowerCase().includes(q) ||
+      t.country.toLowerCase().includes(q) ||
+      String(t.id).includes(q)
+    ).slice(0, 9);
+
+    if (!hits.length) { searchResults.style.display = 'none'; return; }
+
+    searchResults.innerHTML = hits.map(t => `
+      <div class="sr-item" data-id="${t.id}">
+        <div class="sr-num">TEAM #${t.id}</div>
+        <div class="sr-name">${t.name}</div>
+        <div class="sr-loc">${t.flag} ${t.city !== '—' ? t.city + ', ' : ''}${t.country}</div>
+      </div>
+    `).join('');
+
+    searchResults.querySelectorAll('.sr-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const team = TEAMS.find(t => t.id === Number(el.dataset.id));
+        if (!team) return;
+        searchInput.value = '';
+        searchResults.style.display = 'none';
+        map.setView([team.lat, team.lng], 10, { animate: true });
+        openPanel(team);
+      });
+    });
+    searchResults.style.display = 'block';
+  });
+
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target))
+      searchResults.style.display = 'none';
+  });
+
+  // ── SPOTLIGHT ─────────────────────────────────────────────────────────────────
+  const SL_ZOOM     = 5;    // "country level" zoom
+  const SL_TOTAL    = 5000; // ms per team (fly + view time)
+  const SL_FLY_SEC  = 1.4;  // flyTo duration in seconds
+
+  let slActive     = false;
+  let slIndex      = 0;
+  let slTimer      = null;
+  let slPopup      = null;
+  let slGeneration = 0;
+  let SPOTLIGHT_ORDER = []; // teams sorted for maximum cross-globe panning
+
+  // Greedy "farthest-next" sort so every transition pans across large distances.
+  // Geographic distance is approximated on a flat (lng, lat) grid which is fine
+  // for maximising visual jump — we don't need great-circle accuracy here.
+  function buildSpotlightOrder(teams) {
+    if (teams.length <= 1) return [...teams];
+    const pool = [...teams];
+    // Start from an Americas team for a dramatic opening pan toward Europe/Asia
+    const startIdx = pool.findIndex(t => t.lng < -60) >= 0
+      ? pool.findIndex(t => t.lng < -60) : 0;
+    const sorted = pool.splice(startIdx, 1);
+
+    while (pool.length > 0) {
+      const last = sorted[sorted.length - 1];
+      let best = 0, bestDist = -1;
+      for (let i = 0; i < pool.length; i++) {
+        // Wrap longitude distance so e.g. -160 ↔ 160 is treated as close
+        let dlng = Math.abs(pool[i].lng - last.lng);
+        if (dlng > 180) dlng = 360 - dlng;
+        const dlat = pool[i].lat - last.lat;
+        const dist = dlng * dlng + dlat * dlat;
+        if (dist > bestDist) { bestDist = dist; best = i; }
+      }
+      sorted.push(pool.splice(best, 1)[0]);
+    }
+    return sorted;
+  }
+
+  function slShow(index) {
+    const gen = ++slGeneration;
+    const team = SPOTLIGHT_ORDER[index];
+
+    // Close previous popup
+    if (slPopup) { map.closePopup(slPopup); slPopup = null; }
+
+    // Replace spotlight beacon on its own layer (never clustered)
+    // Independent teams have no fixed location so no beacon
+    spotlightLayer.clearLayers();
+    if (team.city !== '—') {
+      const spotMarker = L.marker([team.lat, team.lng], {
+        icon: makeIcon('spotlight'),
+        zIndexOffset: 2000,
+        interactive: false,
+      });
+      spotlightLayer.addLayer(spotMarker);
+    }
+
+    // Dim every regular cluster-group pin
+    document.getElementById('map').classList.add('spotlight-mode');
+
+    // Fly to team — use world zoom for independent teams, country zoom for others
+    const zoom = team.slZoom ?? SL_ZOOM;
+    map.flyTo([team.lat, team.lng], zoom, {
+      duration: SL_FLY_SEC,
+      easeLinearity: 0.35,
+    });
+
+    // Show popup once the map settles
+    map.once('moveend', () => {
+      if (gen !== slGeneration) return; // stale — a newer slide took over
+      const cityLine = team.city !== '—'
+        ? `${team.city} · ${team.country}`
+        : team.country;
+      slPopup = L.popup({
+        className: 'sl-popup',
+        closeButton: false,
+        autoPan: false,
+        offset: [0, -6],
+        maxWidth: 300,
+      })
+        .setLatLng([team.lat, team.lng])
+        .setContent(`
+          <div class="sl-card">
+            <div class="sl-card-num">
+              <span class="sl-live-dot"></span>TEAM #${team.id}
+            </div>
+            <div class="sl-card-name">${team.name}</div>
+            <div class="sl-card-sep"></div>
+            <div class="sl-card-city">
+              <span class="flag">${team.flag}</span>${cityLine}
+            </div>
+          </div>
+        `)
+        .openOn(map);
+    });
+
+    // Update counter + progress bar
+    document.getElementById('sl-counter').textContent = `${index + 1} / ${SPOTLIGHT_ORDER.length}`;
+    const fill = document.getElementById('sl-progress');
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fill.style.transition = `width ${SL_TOTAL}ms linear`;
+      fill.style.width = '100%';
+    }));
+  }
+
+  function slAdvance() {
+    slIndex = (slIndex + 1) % SPOTLIGHT_ORDER.length;
+    slShow(slIndex);
+  }
+
+  function slNext() {
+    clearInterval(slTimer);
+    slIndex = (slIndex + 1) % SPOTLIGHT_ORDER.length;
+    slShow(slIndex);
+    if (slActive) slTimer = setInterval(slAdvance, SL_TOTAL);
+  }
+
+  function slPrev() {
+    clearInterval(slTimer);
+    slIndex = (slIndex - 1 + SPOTLIGHT_ORDER.length) % SPOTLIGHT_ORDER.length;
+    slShow(slIndex);
+    if (slActive) slTimer = setInterval(slAdvance, SL_TOTAL);
+  }
+
+  function slStart() {
+    if (slActive) return;
+    SPOTLIGHT_ORDER = buildSpotlightOrder(TEAMS);
+    slActive = true;
+    closePanel();
+    document.getElementById('spotlight-bar').classList.add('active');
+    document.getElementById('btn-spotlight').style.display = 'none';
+    document.getElementById('sl-playpause').innerHTML = '&#9646;&#9646;';
+    slShow(slIndex);
+    slTimer = setInterval(slAdvance, SL_TOTAL);
+  }
+
+  function slPause() {
+    slActive = false;
+    clearInterval(slTimer); slTimer = null;
+    document.getElementById('sl-playpause').innerHTML = '&#9654;';
+    // Freeze progress bar in place
+    const fill = document.getElementById('sl-progress');
+    fill.style.transition = 'none';
+    fill.style.width = getComputedStyle(fill).width;
+  }
+
+  function slResume() {
+    slActive = true;
+    document.getElementById('sl-playpause').innerHTML = '&#9646;&#9646;';
+    slShow(slIndex);
+    slTimer = setInterval(slAdvance, SL_TOTAL);
+  }
+
+  function slTogglePlay() {
+    if (slActive) slPause(); else slResume();
+  }
+
+  function slClose() {
+    slActive = false;
+    clearInterval(slTimer); slTimer = null;
+    if (slPopup) { map.closePopup(slPopup); slPopup = null; }
+    spotlightLayer.clearLayers();
+    document.getElementById('map').classList.remove('spotlight-mode');
+    activeTeamId = null;
+    document.getElementById('spotlight-bar').classList.remove('active');
+    document.getElementById('btn-spotlight').style.display = '';
+    document.getElementById('sl-playpause').innerHTML = '&#9654;';
+    slIndex = 0;
+  }
+
+  // Clicking the map during spotlight doesn't close the popup
+  map.on('click', () => {
+    if (!slActive) { closePanel(); map.closePopup(); }
+  });
+  </script>
+</body>
+</html>
