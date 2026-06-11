@@ -577,10 +577,10 @@
       background: linear-gradient(90deg, rgba(0,212,255,0.4), transparent);
     }
     .sl-card-stats {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8px; margin-top: 10px;
+      display: flex; gap: 8px; margin-top: 10px;
     }
     .sl-stat {
+      flex: 1;
       background: rgba(0,212,255,0.05);
       border: 1px solid rgba(0,212,255,0.15);
       border-radius: 3px;
@@ -595,12 +595,9 @@
     }
     .sl-stat-val {
       font-family: 'Orbitron', sans-serif;
-      font-size: 13px; font-weight: 700;
+      font-size: 12px; font-weight: 700;
       color: var(--bright);
       text-shadow: 0 0 8px rgba(0,212,255,0.3);
-    }
-    .sl-stat-rank {
-      font-size: 11px;
     }
     .sl-card-city {
       font-size: 12px; font-weight: 500; color: var(--text);
@@ -1406,9 +1403,7 @@
         : team.country;
       const stats = teamStatsCache[team.id] || {};
       const fmt = v => v != null ? v : '—';
-      const rankStr = stats.worldRank != null
-        ? `#${stats.worldRank}${stats.worldTotal ? ' / ' + stats.worldTotal.toLocaleString() : ''}`
-        : '—';
+      const rankStr = stats.worldRank != null ? `#${stats.worldRank}` : '—';
       const statsHtml = `
         <div class="sl-card-sep"></div>
         <div class="sl-card-stats">
@@ -1418,7 +1413,7 @@
           </div>
           <div class="sl-stat">
             <span class="sl-stat-lbl">World Rank</span>
-            <span class="sl-stat-val sl-stat-rank">${rankStr}</span>
+            <span class="sl-stat-val">${rankStr}</span>
           </div>
           <div class="sl-stat">
             <span class="sl-stat-lbl">Auto OPR</span>
@@ -1434,7 +1429,7 @@
         closeButton: false,
         autoPan: false,
         offset: [0, -6],
-        maxWidth: 320,
+        maxWidth: 420,
       })
         .setLatLng([team.lat, team.lng])
         .setContent(`
