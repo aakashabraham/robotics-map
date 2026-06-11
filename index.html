@@ -576,6 +576,29 @@
       height: 1px; margin-bottom: 10px;
       background: linear-gradient(90deg, rgba(0,212,255,0.4), transparent);
     }
+    .sl-card-stats {
+      display: flex; gap: 10px; margin-top: 10px;
+    }
+    .sl-stat {
+      flex: 1;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.15);
+      border-radius: 3px;
+      padding: 6px 8px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .sl-stat-lbl {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 7px; letter-spacing: 2px;
+      color: var(--cyan); opacity: 0.55;
+      text-transform: uppercase;
+    }
+    .sl-stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--bright);
+      text-shadow: 0 0 8px rgba(0,212,255,0.3);
+    }
     .sl-card-city {
       font-size: 12px; font-weight: 500; color: var(--text);
       display: flex; align-items: center; gap: 7px;
@@ -791,137 +814,239 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>
-  // ── TEAM DATA (city-accurate coordinates with per-city jitter) ───────────────
-  const TEAMS = [
-    // ── INDEPENDENT (ocean positions — world-zoom spotlight) ──
-    { id:12524, name:"Sputnik Original",          city:"—",              country:"Independent",      flag:"🌐", lat:  8.0, lng:-145.0, slZoom:2 },
-    { id:17517, name:"WoEN: ULT",                 city:"—",              country:"Independent",      flag:"🌐", lat:  2.0, lng: -28.0, slZoom:2 },
-    { id:20042, name:"Time Walk",                 city:"—",              country:"Independent",      flag:"🌐", lat:-18.0, lng:  72.0, slZoom:2 },
-    { id:28419, name:"GearLine",                  city:"—",              country:"Independent",      flag:"🌐", lat:-28.0, lng:-130.0, slZoom:2 },
-    { id:33333, name:"WoEN: AiR",                 city:"—",              country:"Independent",      flag:"🌐", lat: 72.0, lng:  18.0, slZoom:2 },
+  // ── GEOCODING TABLES (city name → [lat, lng], used to place teams on the map) ─
+  const CITY_COORDS = {
+    // Canada
+    'victoria': [48.428, -123.365], 'markham': [43.876, -79.268],
+    // Cyprus
+    'lakatamia': [35.140, 33.302],
+    // Romania
+    'alba iulia': [46.070, 23.580], 'ploiești': [44.940, 26.028],
+    'ploiesti': [44.940, 26.028],   'bucharest': [44.426, 26.103],
+    'bucuresti': [44.426, 26.103],  'bucuresti, sector 2': [44.449, 26.116],
+    'brașov': [45.658, 25.601],     'brasov': [45.658, 25.601],
+    'iași': [47.158, 27.601],       'iasi': [47.158, 27.601],
+    'ramnicu sarat': [45.380, 27.053], 'brăila': [45.269, 27.957],
+    'braila': [45.269, 27.957],     'cluj-napoca': [46.771, 23.624],
+    'zalău': [47.197, 23.064],      'zalau': [47.197, 23.064],
+    'hațeg': [45.603, 22.950],      'hateg': [45.603, 22.950],
+    'ploiești': [44.940, 26.028],
+    // Jamaica
+    'kingston': [17.997, -76.793],
+    // Indonesia
+    'sleman': [-7.717, 110.357],    'depok': [-6.402, 106.794],
+    'jogjakarta': [-7.797, 110.370], 'yogyakarta': [-7.797, 110.370],
+    // South Africa
+    'cape town': [-33.925, 18.424], 'potchefstroom': [-26.717, 27.100],
+    // China
+    'shanghai': [31.230, 121.473],
+    // Venezuela
+    'maracaibo': [10.665, -71.610],
+    // Germany
+    'stuttgart': [48.775, 9.181], 'stuttgart ': [48.775, 9.181],
+    // USA
+    'sammamish': [47.616, -122.036], 'plano': [33.020, -96.699],
+    'columbia falls': [48.369, -114.186], 'eagle': [43.695, -116.354],
+    'morehead': [38.186, -83.432],
+    // Italy
+    'villorba': [45.733, 12.283],
+    // Türkiye
+    'salihli': [38.482, 28.138],
+    'istanbul': [41.015, 28.980],   'i̇stanbul': [41.015, 28.980],
+    'İstanbul': [41.015, 28.980], 'İSTANBUL': [41.015, 28.980],
+    'büyükçekmece': [41.022, 28.577],
+    'bakırköy': [40.980, 28.872],
+    // France
+    'saint jeoire': [46.142, 6.466], 'saint-jeoire': [46.142, 6.466],
+    // Lithuania
+    'vilnius': [54.687, 25.280],    'kaunas': [54.898, 23.903],
+    // Brazil
+    'francisco beltrão': [-26.081, -53.055],
+    'francisco beltrao': [-26.081, -53.055],
+    // Greece
+    'ierapetra': [35.010, 25.737],  'thessaloniki': [40.640, 22.944],
+    'drama': [41.154, 24.141],      'vari': [37.828, 23.807],
+    'vari ': [37.828, 23.807],
+    // Moldova
+    'ungheni': [47.211, 27.794],
+    'chișinău': [47.009, 28.863], 'chisinau': [47.009, 28.863],
+    'chisinau ': [47.009, 28.863],
+    'măcărești': [47.003, 28.465], 'macaresti': [47.003, 28.465],
+    // Malaysia
+    'prai': [5.117, 100.405], 'georgetown': [5.414, 100.330],
+    // India
+    'chennai': [13.083, 80.271],    'mumbai': [19.078, 72.878],
+    // Slovenia
+    'ljubljana': [46.057, 14.506],
+    // Nigeria
+    'lekki phase 1': [6.447, 3.535], 'lekki': [6.447, 3.535],
+    'abuja': [9.058, 7.490],
+    // Morocco
+    'mohammedia': [33.686, -7.383], 'goulmima': [31.690, -4.958],
+    'casablanca': [33.573, -7.590],
+    // UK
+    'birmingham': [52.486, -1.890], 'cambridge': [52.205, 0.121],
+    'guildford': [51.237, -0.569],  'lisburn': [54.515, -6.041],
+    'london': [51.507, -0.128],
+    // Poland
+    'legionowo': [52.400, 20.933],
+    'chełm': [51.134, 23.472],  'chelm': [51.134, 23.472],
+    // UAE
+    'dubai': [25.204, 55.282],      'al karama': [25.200, 55.275],
+    // Qatar
+    'doha': [25.285, 51.531],
+    // Libya
+    'sabha': [27.037, 14.429],      'sebha': [27.037, 14.429],
+    // Kazakhstan
+    'almaty': [43.222, 76.852],     'almaty ': [43.222, 76.852],
+    'astana': [51.180, 71.446],     'shymkent': [42.300, 69.600],
+    'shymkent ': [42.300, 69.600],  'kokshetau': [53.284, 69.392],
+    // Taiwan
+    'taipei': [25.033, 121.565],
+    // Hungary
+    'debrecen': [47.532, 21.627],
+    // Spain
+    'pamplona': [42.812, -1.645],
+    // Vietnam
+    'tuy hoa': [13.095, 109.293],
+    // Australia
+    'austral': [-33.925, 150.742],
+  };
 
-    // ── CYPRUS — Lakatamia ──
-    { id:13906, name:"Epiteugma Revved Up 1",     city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.135, lng:33.292 },
-    { id:28378, name:"Epiteugma Revved Up Jr 2",  city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.148, lng:33.304 },
-    { id:32881, name:"Epiteugma Gladiators 2",    city:"Lakatamia",      country:"Cyprus",           flag:"🇨🇾", lat:35.124, lng:33.310 },
+  const COUNTRY_FLAGS = {
+    'Canada':'🇨🇦', 'Cyprus':'🇨🇾', 'Romania':'🇷🇴', 'Jamaica':'🇯🇲',
+    'Indonesia':'🇮🇩', 'South Africa':'🇿🇦', 'Independent':'🌐',
+    'China':'🇨🇳', 'Venezuela':'🇻🇪', 'Germany':'🇩🇪', 'USA':'🇺🇸',
+    'Italy':'🇮🇹', 'Türkiye':'🇹🇷', 'Turkey':'🇹🇷', 'France':'🇫🇷',
+    'Lithuania':'🇱🇹', 'Brazil':'🇧🇷', 'Greece':'🇬🇷', 'Moldova':'🇲🇩',
+    'Malaysia':'🇲🇾', 'India':'🇮🇳', 'Slovenia':'🇸🇮', 'Nigeria':'🇳🇬',
+    'Morocco':'🇲🇦', 'United Kingdom':'🇬🇧', 'Poland':'🇵🇱',
+    'UAE':'🇦🇪', 'United Arab Emirates':'🇦🇪', 'Qatar':'🇶🇦',
+    'Libya':'🇱🇾', 'Kazakhstan':'🇰🇿', 'Taiwan':'🇹🇼',
+    'Chinese Taipei':'🇹🇼', 'Hungary':'🇭🇺', 'Spain':'🇪🇸', 'Vietnam':'🇻🇳',
+    'Australia':'🇦🇺',
+  };
 
-    // ── ROMANIA ──
-    { id:14278, name:"Xeo",                       city:"Alba Iulia",     country:"Romania",          flag:"🇷🇴", lat:46.070, lng:23.580 },
-    { id:15993, name:"infO(1)Robotics",           city:"Ploiești",       country:"Romania",          flag:"🇷🇴", lat:44.943, lng:26.021 },
-    { id:19044, name:"Peppers",                   city:"Iași",           country:"Romania",          flag:"🇷🇴", lat:47.158, lng:27.601 },
-    { id:19054, name:"NeuroBotix",                city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.468, lng:26.115 },
-    { id:19061, name:"Boogeybots",                city:"Râmnicu Sărat",  country:"Romania",          flag:"🇷🇴", lat:45.380, lng:27.053 },
-    { id:19082, name:"RoboAS",                    city:"Brașov",         country:"Romania",          flag:"🇷🇴", lat:45.658, lng:25.601 },
-    { id:19084, name:"Zenith",                    city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.433, lng:26.098 },
-    { id:19141, name:"BraveBots",                 city:"Ploiești",       country:"Romania",          flag:"🇷🇴", lat:44.936, lng:26.035 },
-    { id:19152, name:"Brainstorms",               city:"Zalău",          country:"Romania",          flag:"🇷🇴", lat:47.191, lng:23.056 },
-    { id:22586, name:"CNapSys",                   city:"Zalău",          country:"Romania",          flag:"🇷🇴", lat:47.204, lng:23.072 },
-    { id:24032, name:"Kodikas Robotics",          city:"Brăila",         country:"Romania",          flag:"🇷🇴", lat:45.269, lng:27.957 },
-    { id:24033, name:"Alphatronic",               city:"Cluj-Napoca",    country:"Romania",          flag:"🇷🇴", lat:46.771, lng:23.624 },
-    { id:25225, name:"Afton Robotics",            city:"Hațeg",          country:"Romania",          flag:"🇷🇴", lat:45.603, lng:22.950 },
-    { id:26075, name:"Vampire Robotics",          city:"Bucharest",      country:"Romania",          flag:"🇷🇴", lat:44.420, lng:26.108 },
+  const COUNTRY_CENTROIDS = {
+    'Canada':[56.130,-106.347], 'Cyprus':[35.126,33.430],
+    'Romania':[45.943,24.967],  'Jamaica':[18.109,-77.298],
+    'Indonesia':[-0.789,113.921], 'South Africa':[-30.560,22.938],
+    'China':[35.861,104.195],   'Venezuela':[6.424,-66.590],
+    'Germany':[51.165,10.451],  'USA':[38.895,-77.036],
+    'Italy':[41.871,12.568],    'Türkiye':[38.964,35.243],
+    'Turkey':[38.964,35.243],   'France':[46.603,1.888],
+    'Lithuania':[55.169,23.881], 'Brazil':[-14.235,-51.926],
+    'Greece':[39.074,21.824],   'Moldova':[47.412,28.370],
+    'Malaysia':[4.211,101.976], 'India':[20.594,78.963],
+    'Slovenia':[46.151,14.995], 'Nigeria':[9.082,8.676],
+    'Morocco':[31.792,-7.090],  'United Kingdom':[55.378,-3.436],
+    'Poland':[51.920,19.145],   'UAE':[23.424,53.848],
+    'United Arab Emirates':[23.424,53.848], 'Qatar':[25.355,51.184],
+    'Libya':[26.335,17.229],    'Kazakhstan':[48.019,66.924],
+    'Taiwan':[23.698,120.961],  'Chinese Taipei':[23.698,120.961],
+    'Hungary':[47.163,19.503],  'Spain':[40.463,-3.749],
+    'Vietnam':[14.058,108.278],    'Australia':[-25.274,133.775],
+  };
 
-    // ── INDONESIA ──
-    { id:15242, name:"STEAMachine",               city:"Sleman",         country:"Indonesia",        flag:"🇮🇩", lat:-7.717, lng:110.357 },
-    { id:26523, name:"Pandurata",                 city:"Yogyakarta",     country:"Indonesia",        flag:"🇮🇩", lat:-7.796, lng:110.370 },
-
-    // ── SOUTH AFRICA — Cape Town ──
-    { id:17955, name:"Astrovo",                   city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.910, lng:18.418 },
-    { id:19001, name:"SYRE",                      city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.938, lng:18.414 },
-    { id:26695, name:"The Originals",             city:"Cape Town",      country:"South Africa",     flag:"🇿🇦", lat:-33.925, lng:18.444 },
-
-    // ── CHINA — Shanghai ──
-    { id:19666, name:"Forever Knight",            city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.248, lng:121.468 },
-    { id:19683, name:"Rizzler",                   city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.218, lng:121.492 },
-    { id:19859, name:"Reflection",                city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.208, lng:121.452 },
-    { id:22389, name:"AE86",                      city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.240, lng:121.503 },
-    { id:25720, name:"Fatal Nemesis",             city:"Shanghai",       country:"China",            flag:"🇨🇳", lat:31.200, lng:121.472 },
-
-    // ── VENEZUELA — Maracaibo ──
-    { id:21539, name:"Imagineers",                city:"Maracaibo",      country:"Venezuela",        flag:"🇻🇪", lat:10.671, lng:-71.617 },
-    { id:21552, name:"Astrobots",                 city:"Maracaibo",      country:"Venezuela",        flag:"🇻🇪", lat:10.658, lng:-71.602 },
-
-    // ── USA ──
-    { id:23270, name:"Sounder Bots",              city:"Sammamish",      country:"USA",              flag:"🇺🇸", lat:47.616, lng:-122.036 },
-    { id:23778, name:"Itkan ICQC",                city:"Plano",          country:"USA",              flag:"🇺🇸", lat:33.020, lng:-96.699 },
-    { id:26706, name:"Thunder Lab",               city:"Columbia Falls", country:"USA",              flag:"🇺🇸", lat:48.369, lng:-114.186 },
-
-    // ── ITALY ──
-    { id:23098, name:"PLANCK TEAM",               city:"Villorba",       country:"Italy",            flag:"🇮🇹", lat:45.733, lng:12.283 },
-
-    // ── TÜRKİYE ──
-    { id:24140, name:"Lavender Robotics",         city:"Salihli",        country:"Türkiye",          flag:"🇹🇷", lat:38.482, lng:28.138 },
-    { id:24231, name:"AG Robotik",                city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.022, lng:28.955 },
-    { id:25039, name:"Golden Horn Jr",            city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.010, lng:29.003 },
-    { id:25163, name:"NoktaParantez",             city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.000, lng:28.972 },
-    { id:28743, name:"Jr. AG Robotik",            city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.033, lng:28.982 },
-    { id:29613, name:"Joyful Robotics",           city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:40.988, lng:29.020 },
-    { id:33650, name:"Tulpar FTC",                city:"Istanbul",       country:"Türkiye",          flag:"🇹🇷", lat:41.044, lng:28.934 },
-
-    // ── FRANCE ──
-    { id:24276, name:"Mountain Rocket",           city:"Saint-Jeoire",   country:"France",           flag:"🇫🇷", lat:46.142, lng:6.466 },
-
-    // ── BRAZIL ──
-    { id:24527, name:"Ragnarok",                  city:"Francisco Beltrão", country:"Brazil",        flag:"🇧🇷", lat:-26.081, lng:-53.055 },
-
-    // ── GREECE ──
-    { id:25070, name:"Talos EduRobots",           city:"Ierapetra",      country:"Greece",           flag:"🇬🇷", lat:35.010, lng:25.737 },
-    { id:28490, name:"ThunderBolts",              city:"Thessaloniki",   country:"Greece",           flag:"🇬🇷", lat:40.640, lng:22.944 },
-    { id:28735, name:"Robotek team",              city:"Drama",          country:"Greece",           flag:"🇬🇷", lat:41.154, lng:24.141 },
-    { id:32300, name:"Automatrons",               city:"Vari",           country:"Greece",           flag:"🇬🇷", lat:37.828, lng:23.807 },
-
-    // ── MOLDOVA ──
-    { id:25475, name:"Techno Storm",              city:"Ungheni",        country:"Moldova",          flag:"🇲🇩", lat:47.211, lng:27.794 },
-    { id:25482, name:"SIRIUS",                    city:"Chișinău",       country:"Moldova",          flag:"🇲🇩", lat:47.014, lng:28.857 },
-    { id:25590, name:"RoboRangers",               city:"Chișinău",       country:"Moldova",          flag:"🇲🇩", lat:47.005, lng:28.872 },
-    { id:28675, name:"BrainPower",                city:"Măcărești",      country:"Moldova",          flag:"🇲🇩", lat:47.003, lng:28.465 },
-
-    // ── INDIA ──
-    { id:26438, name:"CROWN",                     city:"Chennai",        country:"India",            flag:"🇮🇳", lat:13.083, lng:80.271 },
-
-    // ── SLOVENIA ──
-    { id:28080, name:"VegaTech",                  city:"Ljubljana",      country:"Slovenia",         flag:"🇸🇮", lat:46.057, lng:14.506 },
-
-    // ── NIGERIA ──
-    { id:23018, name:"CIS-Nexus",                 city:"Lekki",          country:"Nigeria",          flag:"🇳🇬", lat:6.447, lng:3.535 },
-    { id:28343, name:"GSTC Garki",                city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.062, lng:7.491 },
-    { id:28349, name:"The Revolutionaries",       city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.050, lng:7.509 },
-    { id:28634, name:"Robosquad",                 city:"Abuja",          country:"Nigeria",          flag:"🇳🇬", lat:9.072, lng:7.480 },
-
-    // ── MOROCCO ──
-    { id:28552, name:"3andi Blasti",              city:"Mohammedia",     country:"Morocco",          flag:"🇲🇦", lat:33.686, lng:-7.383 },
-    { id:34010, name:"GoulmimaTeam",              city:"Goulmima",       country:"Morocco",          flag:"🇲🇦", lat:31.690, lng:-4.958 },
-    { id:34030, name:"OmarRobotics",              city:"Casablanca",     country:"Morocco",          flag:"🇲🇦", lat:33.573, lng:-7.590 },
-
-    // ── UNITED KINGDOM ──
-    { id:28575, name:"X_FACTOR ROBOTICS",         city:"Birmingham",     country:"United Kingdom",   flag:"🇬🇧", lat:52.486, lng:-1.890 },
-
-    // ── POLAND ──
-    { id:28788, name:"Rabyte",                    city:"Legionowo",      country:"Poland",           flag:"🇵🇱", lat:52.400, lng:20.933 },
-    { id:31570, name:"Stark Robotics",            city:"Chełm",          country:"Poland",           flag:"🇵🇱", lat:51.134, lng:23.472 },
-
-    // ── UAE ──
-    { id:28831, name:"Orbit",                     city:"Dubai",          country:"UAE",              flag:"🇦🇪", lat:25.209, lng:55.274 },
-    { id:34237, name:"DEADLY",                    city:"Dubai",          country:"UAE",              flag:"🇦🇪", lat:25.198, lng:55.290 },
-
-    // ── QATAR ──
-    { id:28898, name:"Techtops",                  city:"Doha",           country:"Qatar",            flag:"🇶🇦", lat:25.285, lng:51.531 },
-
-    // ── LIBYA ──
-    { id:28918, name:"ULTIMA TEAM",               city:"Sabha",          country:"Libya",            flag:"🇱🇾", lat:27.037, lng:14.429 },
-
-    // ── KAZAKHSTAN ──
-    { id:29382, name:"Flying Penguins",           city:"Astana",         country:"Kazakhstan",       flag:"🇰🇿", lat:51.180, lng:71.446 },
-    { id:32717, name:"ThunderBolts",              city:"Almaty",         country:"Kazakhstan",       flag:"🇰🇿", lat:43.218, lng:76.847 },
-    { id:33422, name:"Sirius",                    city:"Almaty",         country:"Kazakhstan",       flag:"🇰🇿", lat:43.228, lng:76.858 },
-    { id:33624, name:"STRIKE",                    city:"Shymkent",       country:"Kazakhstan",       flag:"🇰🇿", lat:42.300, lng:69.600 },
-
-    // ── CHINESE TAIPEI ──
-    { id:32760, name:"VIS Mars",                  city:"Taipei",         country:"Chinese Taipei",   flag:"🇹🇼", lat:25.033, lng:121.565 },
-
-    // ── HUNGARY ──
-    { id:34097, name:"DELTA",                     city:"Debrecen",       country:"Hungary",          flag:"🇭🇺", lat:47.532, lng:21.627 },
+  // Ocean anchor points for teams with no registered location
+  const OCEAN_POSITIONS = [
+    { lat:  8.0, lng:-145.0 }, { lat:  2.0, lng: -28.0 },
+    { lat:-18.0, lng:  72.0 }, { lat:-28.0, lng:-130.0 },
+    { lat: 72.0, lng:  18.0 }, { lat:-40.0, lng: -90.0 },
+    { lat: 15.0, lng: -55.0 }, { lat: 60.0, lng: -30.0 },
   ];
+
+  // Spread multiple teams from the same city using golden-angle spiral
+  const _jitterN = {};
+  function jitteredCoords(key, base) {
+    const n = (_jitterN[key] = (_jitterN[key] ?? 0));
+    _jitterN[key]++;
+    if (n === 0) return [base[0], base[1]];
+    const angle = n * 2.39996; // golden angle rad
+    const r = 0.09 + Math.floor(n / 6) * 0.07;
+    return [base[0] + Math.sin(angle) * r, base[1] + Math.cos(angle) * r];
+  }
+
+  // ── LIVE DATA FROM FTC SCOUT ─────────────────────────────────────────────────
+  let TEAMS = []; // populated async from FTC Scout on load
+  let teamStatsCache = {};
+  const GQL = 'https://api.ftcscout.org/graphql';
+
+  async function fetchEventTeams() {
+    const query = `{
+      eventByCode(season: 2025, code: "FPEIST") {
+        teams { team { number name location { city country } } }
+      }
+    }`;
+    const res = await fetch(GQL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const { data } = await res.json();
+
+    let oceanIdx = 0;
+    return data.eventByCode.teams.map(({ team }) => {
+      const { number, name, location } = team;
+      const { city, country } = location;
+
+      if (country === 'Independent' || !city.trim()) {
+        const pos = OCEAN_POSITIONS[oceanIdx % OCEAN_POSITIONS.length];
+        oceanIdx++;
+        return { id: number, name, city: '—', country: 'Independent',
+                 flag: '🌐', lat: pos.lat, lng: pos.lng, slZoom: 2 };
+      }
+
+      const cityKey = city.toLowerCase().trim();
+      const base = CITY_COORDS[cityKey] ?? CITY_COORDS[city.trim()] ?? COUNTRY_CENTROIDS[country] ?? [0, 0];
+      const [lat, lng] = jitteredCoords(cityKey, base);
+      return {
+        id: number, name,
+        city: city.trim(), country,
+        flag: COUNTRY_FLAGS[country] ?? '🏳️',
+        lat, lng,
+      };
+    });
+  }
+
+  async function loadTeamStats(teams) {
+    const ids = teams.map(t => t.id);
+    const aliases = ids.map(n => `
+      t${n}: teamByNumber(number: ${n}) {
+        rookieYear
+        events(season: 2025) {
+          stats {
+            ... on TeamEventStats2025 {
+              wins losses qualMatchesPlayed
+              opr { totalPointsNp }
+            }
+          }
+        }
+      }
+    `).join('');
+
+    try {
+      const res = await fetch(GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: `{ ${aliases} }` }),
+      });
+      const { data } = await res.json();
+
+      for (const id of ids) {
+        const d = data?.[`t${id}`];
+        if (!d) continue;
+        const evts = (d.events || []).filter(e => e.stats);
+        const wins   = evts.reduce((s, e) => s + (e.stats.wins   || 0), 0);
+        const losses = evts.reduce((s, e) => s + (e.stats.losses || 0), 0);
+        const oprs   = evts.map(e => e.stats.opr?.totalPointsNp || 0).filter(v => v > 0);
+        const avgOPR = oprs.length ? Math.round(oprs.reduce((a, b) => a + b) / oprs.length) : null;
+        teamStatsCache[id] = { rookieYear: d.rookieYear, wins, losses, events: evts.length, opr: avgOPR };
+      }
+    } catch (err) {
+      console.warn('FTC Scout stats unavailable:', err);
+    }
+  }
 
   // ── MAP INIT ─────────────────────────────────────────────────────────────────
   const map = L.map('map', {
@@ -1026,7 +1151,57 @@
     map.addLayer(clusterGroup);
   }
 
-  buildMarkers(TEAMS);
+  // ── ASYNC APP INIT ───────────────────────────────────────────────────────────
+  let activeCity = null;
+
+  async function initApp() {
+    try {
+      TEAMS = await fetchEventTeams();
+    } catch (err) {
+      console.error('Failed to load teams from FTC Scout:', err);
+      TEAMS = [];
+    }
+
+    buildMarkers(TEAMS);
+
+    // Build city filter panel
+    const cityMap = {};
+    TEAMS.forEach(t => {
+      const key = t.city !== '—' ? t.city : '(Independent)';
+      if (!cityMap[key]) cityMap[key] = { count: 0, flag: t.flag, country: t.country, key };
+      cityMap[key].count++;
+    });
+    const sortedCities = Object.values(cityMap).sort((a, b) => b.count - a.count);
+    const realCityCount = Object.keys(cityMap).filter(k => k !== '(Independent)').length;
+
+    document.getElementById('cp-sub').textContent = `${realCityCount} cities`;
+    document.getElementById('stat-cities').textContent = 0;
+
+    animCount(document.getElementById('stat-teams'), TEAMS.length);
+    animCount(document.getElementById('stat-cities'), realCityCount);
+
+    const cpItems = document.getElementById('cp-items');
+    sortedCities.forEach(cityData => {
+      const el = document.createElement('div');
+      el.className = 'cp-item';
+      el.dataset.city = cityData.key;
+      el.dataset.search = cityData.key.toLowerCase() + ' ' + cityData.country.toLowerCase();
+      el.innerHTML = `
+        <div class="cp-left">
+          <span class="cp-city">${cityData.key}</span>
+          <span class="cp-country-lbl">${cityData.flag} ${cityData.country}</span>
+        </div>
+        <span class="cp-count">${cityData.count}</span>
+      `;
+      el.addEventListener('click', () => applyFilter(cityData.key));
+      cpItems.appendChild(el);
+    });
+
+    // Kick off stats fetch in background — populates teamStatsCache before spotlight opens
+    loadTeamStats(TEAMS);
+  }
+
+  initApp();
 
   // ── SIDE PANEL ───────────────────────────────────────────────────────────────
   function openPanel(team) {
@@ -1053,21 +1228,6 @@
   document.getElementById('sp-close').addEventListener('click', closePanel);
 
   // ── CITY FILTER ───────────────────────────────────────────────────────────────
-  // Group by city (skip "—" independent teams, group them as "Independent")
-  const cityMap = {};
-  TEAMS.forEach(t => {
-    const key = t.city !== '—' ? t.city : '(Independent)';
-    if (!cityMap[key]) cityMap[key] = { count: 0, flag: t.flag, country: t.country, key };
-    cityMap[key].count++;
-    // if multiple countries share a city name, just keep one flag
-  });
-
-  const sortedCities = Object.values(cityMap).sort((a, b) => b.count - a.count);
-  const realCityCount = Object.keys(cityMap).filter(k => k !== '(Independent)').length;
-
-  document.getElementById('cp-sub').textContent = `${realCityCount} cities`;
-  document.getElementById('stat-cities').textContent = 0; // animated below
-
   function animCount(el, target, duration = 800) {
     let start = null;
     const step = ts => {
@@ -1078,27 +1238,6 @@
     };
     requestAnimationFrame(step);
   }
-  animCount(document.getElementById('stat-teams'), TEAMS.length);
-  animCount(document.getElementById('stat-cities'), realCityCount);
-
-  const cpItems = document.getElementById('cp-items');
-  let activeCity = null;
-
-  sortedCities.forEach(cityData => {
-    const el = document.createElement('div');
-    el.className = 'cp-item';
-    el.dataset.city = cityData.key;
-    el.dataset.search = cityData.key.toLowerCase() + ' ' + cityData.country.toLowerCase();
-    el.innerHTML = `
-      <div class="cp-left">
-        <span class="cp-city">${cityData.key}</span>
-        <span class="cp-country-lbl">${cityData.flag} ${cityData.country}</span>
-      </div>
-      <span class="cp-count">${cityData.count}</span>
-    `;
-    el.addEventListener('click', () => applyFilter(cityData.key));
-    cpItems.appendChild(el);
-  });
 
   document.getElementById('cp-all-btn').addEventListener('click', resetFilter);
 
@@ -1261,6 +1400,27 @@
       const cityLine = team.city !== '—'
         ? `${team.city} · ${team.country}`
         : team.country;
+      const stats = teamStatsCache[team.id] || {};
+      const hasStats = !!stats.rookieYear;
+      const wl = hasStats ? `${stats.wins}W · ${stats.losses}L` : '—';
+      const opr = (hasStats && stats.opr != null) ? stats.opr : '—';
+      const evts = hasStats ? (stats.events || '—') : '—';
+      const statsHtml = `
+        <div class="sl-card-sep"></div>
+        <div class="sl-card-stats">
+          <div class="sl-stat">
+            <span class="sl-stat-lbl">Rookie Year</span>
+            <span class="sl-stat-val">${hasStats ? stats.rookieYear : '—'}</span>
+          </div>
+          <div class="sl-stat">
+            <span class="sl-stat-lbl">2025–26 W/L</span>
+            <span class="sl-stat-val">${wl}</span>
+          </div>
+          <div class="sl-stat">
+            <span class="sl-stat-lbl">Avg OPR</span>
+            <span class="sl-stat-val">${opr}</span>
+          </div>
+        </div>`;
       slPopup = L.popup({
         className: 'sl-popup',
         closeButton: false,
@@ -1279,6 +1439,7 @@
             <div class="sl-card-city">
               <span class="flag">${team.flag}</span>${cityLine}
             </div>
+            ${statsHtml}
           </div>
         `)
         .openOn(map);
