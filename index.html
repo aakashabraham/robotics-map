@@ -390,6 +390,17 @@
     .popup-name { font-size: 13px; font-weight: 600; color: var(--bright); margin-bottom: 4px; white-space: nowrap; }
     .popup-loc  { font-size: 11px; color: var(--text); display: flex; align-items: center; gap: 6px; }
 
+    .hover-tip.leaflet-tooltip {
+      background: rgba(6,9,22,0.95) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 20px rgba(0,212,255,0.15) !important;
+      padding: 12px 16px !important;
+      color: var(--bright) !important;
+      font-family: 'Exo 2', sans-serif !important;
+    }
+    .hover-tip.leaflet-tooltip::before { display: none !important; }
+
     /* ─── SEARCH RESULTS ─────────────────────────── */
     #search-results {
       position: fixed; top: 60px; right: 28px; z-index: 800;
@@ -967,18 +978,12 @@
         openPanel(team);
       });
 
-      marker.on('mouseover', function () {
-        const cityLine = team.city !== '—' ? team.city : 'Venue: Istanbul';
-        L.popup({ closeButton: false, offset: [0, -6], autoPan: false })
-          .setLatLng([team.lat, team.lng])
-          .setContent(`
-            <div class="popup-num">TEAM #${team.id}</div>
-            <div class="popup-name">${team.name}</div>
-            <div class="popup-loc">${team.flag} ${cityLine}, ${team.country}</div>
-          `)
-          .openOn(map);
-      });
-      marker.on('mouseout', () => map.closePopup());
+      const cityLine = team.city !== '—' ? team.city : 'Venue: Istanbul';
+      marker.bindTooltip(`
+        <div class="popup-num">TEAM #${team.id}</div>
+        <div class="popup-name">${team.name}</div>
+        <div class="popup-loc">${team.flag} ${cityLine}, ${team.country}</div>
+      `, { className: 'hover-tip', direction: 'top', offset: [0, -8], sticky: false });
 
       clusterGroup.addLayer(marker);
       markerMap[team.id] = marker;
@@ -1052,10 +1057,8 @@
 
     clickPopup = L.popup({
       className: 'sl-popup',
-      closeButton: true,
+      closeButton: false,
       autoPan: true,
-      autoClose: false,
-      closeOnClick: false,
       offset: [0, -10],
       maxWidth: 420,
     })
@@ -1408,7 +1411,7 @@
 
   // Clicking the map during spotlight doesn't close the popup
   map.on('click', () => {
-    if (!slActive) map.closePopup(); // closes hover tooltip only; click popup stays until ×
+    if (!slActive) closePanel();
   });
   </script>
 </body>
