@@ -964,7 +964,6 @@
         }
         marker.setIcon(makeIcon('active'));
         activeTeamId = team.id;
-        map.closePopup();
         openPanel(team);
       });
 
@@ -1055,6 +1054,8 @@
       className: 'sl-popup',
       closeButton: true,
       autoPan: true,
+      autoClose: false,
+      closeOnClick: false,
       offset: [0, -10],
       maxWidth: 420,
     })
@@ -1407,7 +1408,7 @@
 
   // Clicking the map during spotlight doesn't close the popup
   map.on('click', () => {
-    if (!slActive) { closePanel(); map.closePopup(); }
+    if (!slActive) map.closePopup(); // closes hover tooltip only; click popup stays until ×
   });
   </script>
 </body>
