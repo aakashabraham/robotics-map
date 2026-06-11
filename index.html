@@ -577,10 +577,10 @@
       background: linear-gradient(90deg, rgba(0,212,255,0.4), transparent);
     }
     .sl-card-stats {
-      display: flex; gap: 10px; margin-top: 10px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 10px;
     }
     .sl-stat {
-      flex: 1;
       background: rgba(0,212,255,0.05);
       border: 1px solid rgba(0,212,255,0.15);
       border-radius: 3px;
@@ -598,6 +598,9 @@
       font-size: 13px; font-weight: 700;
       color: var(--bright);
       text-shadow: 0 0 8px rgba(0,212,255,0.3);
+    }
+    .sl-stat-rank {
+      font-size: 11px;
     }
     .sl-card-city {
       font-size: 12px; font-weight: 500; color: var(--text);
@@ -1014,13 +1017,11 @@
     const aliases = ids.map(n => `
       t${n}: teamByNumber(number: ${n}) {
         rookieYear
-        events(season: 2025) {
-          stats {
-            ... on TeamEventStats2025 {
-              wins losses qualMatchesPlayed
-              opr { totalPointsNp }
-            }
-          }
+        quickStats(season: 2025) {
+          tot { value rank }
+          auto { value }
+          dc { value }
+          count
         }
       }
     `).join('');
@@ -1036,12 +1037,15 @@
       for (const id of ids) {
         const d = data?.[`t${id}`];
         if (!d) continue;
-        const evts = (d.events || []).filter(e => e.stats);
-        const wins   = evts.reduce((s, e) => s + (e.stats.wins   || 0), 0);
-        const losses = evts.reduce((s, e) => s + (e.stats.losses || 0), 0);
-        const oprs   = evts.map(e => e.stats.opr?.totalPointsNp || 0).filter(v => v > 0);
-        const avgOPR = oprs.length ? Math.round(oprs.reduce((a, b) => a + b) / oprs.length) : null;
-        teamStatsCache[id] = { rookieYear: d.rookieYear, wins, losses, events: evts.length, opr: avgOPR };
+        const qs = d.quickStats;
+        teamStatsCache[id] = {
+          rookieYear: d.rookieYear,
+          npOpr:      qs?.tot?.value  != null ? Math.round(qs.tot.value)  : null,
+          worldRank:  qs?.tot?.rank   != null ? qs.tot.rank               : null,
+          worldTotal: qs?.count       != null ? qs.count                  : null,
+          autoOpr:    qs?.auto?.value != null ? Math.round(qs.auto.value) : null,
+          dcOpr:      qs?.dc?.value   != null ? Math.round(qs.dc.value)   : null,
+        };
       }
     } catch (err) {
       console.warn('FTC Scout stats unavailable:', err);
@@ -1401,24 +1405,28 @@
         ? `${team.city} · ${team.country}`
         : team.country;
       const stats = teamStatsCache[team.id] || {};
-      const hasStats = !!stats.rookieYear;
-      const wl = hasStats ? `${stats.wins}W · ${stats.losses}L` : '—';
-      const opr = (hasStats && stats.opr != null) ? stats.opr : '—';
-      const evts = hasStats ? (stats.events || '—') : '—';
+      const fmt = v => v != null ? v : '—';
+      const rankStr = stats.worldRank != null
+        ? `#${stats.worldRank}${stats.worldTotal ? ' / ' + stats.worldTotal.toLocaleString() : ''}`
+        : '—';
       const statsHtml = `
         <div class="sl-card-sep"></div>
         <div class="sl-card-stats">
           <div class="sl-stat">
-            <span class="sl-stat-lbl">Rookie Year</span>
-            <span class="sl-stat-val">${hasStats ? stats.rookieYear : '—'}</span>
+            <span class="sl-stat-lbl">NP OPR</span>
+            <span class="sl-stat-val">${fmt(stats.npOpr)}</span>
           </div>
           <div class="sl-stat">
-            <span class="sl-stat-lbl">2025–26 W/L</span>
-            <span class="sl-stat-val">${wl}</span>
+            <span class="sl-stat-lbl">World Rank</span>
+            <span class="sl-stat-val sl-stat-rank">${rankStr}</span>
           </div>
           <div class="sl-stat">
-            <span class="sl-stat-lbl">Avg OPR</span>
-            <span class="sl-stat-val">${opr}</span>
+            <span class="sl-stat-lbl">Auto OPR</span>
+            <span class="sl-stat-val">${fmt(stats.autoOpr)}</span>
+          </div>
+          <div class="sl-stat">
+            <span class="sl-stat-lbl">Teleop OPR</span>
+            <span class="sl-stat-val">${fmt(stats.dcOpr)}</span>
           </div>
         </div>`;
       slPopup = L.popup({
@@ -1426,7 +1434,7 @@
         closeButton: false,
         autoPan: false,
         offset: [0, -6],
-        maxWidth: 300,
+        maxWidth: 320,
       })
         .setLatLng([team.lat, team.lng])
         .setContent(`
