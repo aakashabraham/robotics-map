@@ -40,31 +40,90 @@
     }
 
     body.light {
-      --cyan:    #007fa8;
-      --purple:  #6020bb;
-      --magenta: #cc0044;
-      --bg:      #f0f4fa;
-      --bg2:     #e8edf6;
-      --panel:   rgba(248,251,255,0.97);
-      --border:  rgba(0,160,210,0.22);
-      --text:    #4a5878;
-      --bright:  #1a2440;
+      /* Tailwind slate/sky palette — cool, clean, high-contrast */
+      --cyan:    #0369a1;   /* sky-700: professional blue, reads on white */
+      --purple:  #6d28d9;   /* violet-700 */
+      --magenta: #be185d;   /* pink-700 */
+      --bg:      #f1f5f9;   /* slate-100 */
+      --bg2:     #e2e8f0;   /* slate-200 */
+      --panel:   rgba(255,255,255,0.97);
+      --border:  rgba(15,23,42,0.12);  /* dark neutral border on light bg */
+      --text:    #475569;   /* slate-500 */
+      --bright:  #0f172a;   /* slate-900 */
 
-      --header-bg-from: rgba(240,245,255,0.98);
-      --header-bg-to:   rgba(232,240,252,0.98);
-      --popup-bg:       rgba(248,251,255,0.97);
-      --sl-popup-bg:    rgba(246,250,255,0.98);
-      --bar-bg:         rgba(248,251,255,0.97);
-      --map-bg:         #d8e6f0;
-      --attr-bg:        rgba(240,244,252,0.85);
-      --attr-text:      rgba(74,88,120,0.65);
-      --attr-link:      rgba(0,127,168,0.7);
-      --grid-c:         rgba(0,160,210,0.04);
-      --continent-c:    rgba(20,40,80,0.22);
-      --continent-glow: rgba(20,40,80,0.08);
-      --placeholder-c:  rgba(74,88,120,0.4);
+      --header-bg-from: rgba(248,250,252,0.98);  /* slate-50 */
+      --header-bg-to:   rgba(241,245,249,0.98);  /* slate-100 */
+      --popup-bg:       rgba(255,255,255,0.98);
+      --sl-popup-bg:    rgba(255,255,255,0.99);
+      --bar-bg:         rgba(255,255,255,0.96);
+      --map-bg:         #cbd5e1;   /* slate-300 */
+      --attr-bg:        rgba(255,255,255,0.88);
+      --attr-text:      rgba(71,85,105,0.7);
+      --attr-link:      rgba(3,105,161,0.75);
+      --grid-c:         rgba(15,23,42,0.04);
+      --continent-c:    rgba(15,23,42,0.3);
+      --continent-glow: rgba(15,23,42,0.1);
+      --placeholder-c:  rgba(100,116,139,0.55);
       --tile-filter:    brightness(1.0);
     }
+
+    /* Light mode component overrides — fix hardcoded cyan rgba() values */
+    body.light .h-badge {
+      border-color: rgba(3,105,161,0.35);
+      box-shadow: none; text-shadow: none;
+    }
+    body.light .h-search { background: rgba(15,23,42,0.04); }
+    body.light .h-search input::placeholder { color: rgba(100,116,139,0.55); }
+    body.light #theme-toggle:hover { background: rgba(3,105,161,0.1); }
+    body.light .stat-card { background: rgba(3,105,161,0.04); }
+    body.light .stat-num { text-shadow: none; }
+    body.light .leaflet-control-zoom a:hover { background: rgba(3,105,161,0.1) !important; }
+    body.light .cluster-inner {
+      background: rgba(3,105,161,0.1);
+      border-color: rgba(3,105,161,0.5);
+      box-shadow: 0 0 10px rgba(3,105,161,0.15);
+      text-shadow: none;
+    }
+    body.light #map.spotlight-mode .pin-dot { background: rgba(3,105,161,0.2) !important; }
+    body.light .pin-dot { box-shadow: 0 0 5px rgba(3,105,161,0.6), 0 0 12px rgba(3,105,161,0.3); }
+    body.light .pin-ring { border-color: rgba(3,105,161,0.7); }
+    body.light .cp-search input { background: rgba(15,23,42,0.04); border-color: rgba(15,23,42,0.12); }
+    body.light .cp-all:hover { background: rgba(3,105,161,0.05); }
+    body.light .cp-all-dot { box-shadow: none; }
+    body.light .cp-item:hover { background: rgba(3,105,161,0.05); border-left-color: rgba(3,105,161,0.35); }
+    body.light .cp-item.active { background: rgba(3,105,161,0.08); border-left-color: var(--cyan); }
+    body.light .float-btn:hover {
+      background: rgba(3,105,161,0.08);
+      border-color: rgba(3,105,161,0.4);
+      box-shadow: 0 0 10px rgba(3,105,161,0.08);
+    }
+    body.light .leaflet-popup-content-wrapper {
+      box-shadow: 0 2px 16px rgba(15,23,42,0.12) !important;
+    }
+    body.light .hover-tip.leaflet-tooltip {
+      box-shadow: 0 2px 16px rgba(15,23,42,0.12) !important;
+    }
+    body.light .sr-item { border-bottom-color: rgba(15,23,42,0.06); }
+    body.light .sr-item:hover { background: rgba(3,105,161,0.06); }
+    body.light .sl-popup .leaflet-popup-content-wrapper {
+      border-color: rgba(3,105,161,0.4) !important;
+      box-shadow: 0 4px 24px rgba(15,23,42,0.15), 0 0 0 1px rgba(3,105,161,0.1) !important;
+    }
+    body.light .sl-card::before { opacity: 0.4; }
+    body.light .sl-card-sep { background: linear-gradient(90deg, rgba(3,105,161,0.35), transparent); }
+    body.light .sl-live-dot { box-shadow: 0 0 5px rgba(3,105,161,0.6); }
+    body.light .sl-card-num { text-shadow: none; }
+    body.light .sl-stat { background: rgba(3,105,161,0.05); border-color: rgba(3,105,161,0.14); }
+    body.light .sl-stat-val { text-shadow: none; }
+    body.light .sl-awards-total { border-color: rgba(3,105,161,0.2); }
+    body.light .sl-card-badge { border-color: rgba(3,105,161,0.2); }
+    body.light .sl-btn { background: rgba(3,105,161,0.06); }
+    body.light .sl-btn:hover { background: rgba(3,105,161,0.14); }
+    body.light #spotlight-bar { box-shadow: 0 4px 20px rgba(15,23,42,0.12); }
+    body.light #spotlight-bar::before { opacity: 0.3; }
+    body.light .sl-prog-track { background: rgba(3,105,161,0.1); }
+    body.light .sl-close { background: rgba(190,24,93,0.06); border-color: rgba(190,24,93,0.22); }
+    body.light .sl-close:hover { background: rgba(190,24,93,0.14); }
 
     html, body {
       width: 100%; height: 100%;
