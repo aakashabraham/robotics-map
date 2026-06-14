@@ -1286,12 +1286,6 @@
               <span class="sl-stat-val" id="cp-${team.id}-dc">${fmt(s.dcOpr)}</span>
             </div>
           </div>
-          <div class="sl-card-stats" style="margin-top:6px">
-            <div class="sl-stat">
-              <span class="sl-stat-lbl">Since</span>
-              <span class="sl-stat-val" id="cp-${team.id}-rookie">${fmt(s.rookieYear)}</span>
-            </div>
-          </div>
           <div id="cp-${team.id}-awards">${awardsHtml(s.recentAwards, s.totalAwards)}</div>
         </div>
       `)
@@ -1529,12 +1523,6 @@
           <div class="sl-stat">
             <span class="sl-stat-lbl">Teleop</span>
             <span class="sl-stat-val">${fmt(stats.dcOpr)}</span>
-          </div>
-        </div>
-        <div class="sl-card-stats" style="margin-top:6px">
-          <div class="sl-stat">
-            <span class="sl-stat-lbl">Since</span>
-            <span class="sl-stat-val">${fmt(stats.rookieYear)}</span>
           </div>
         </div>
         ${awardsHtml(stats.recentAwards, stats.totalAwards)}`;
