@@ -493,11 +493,86 @@
       text-shadow: 0 0 8px rgba(0,212,255,0.3);
     }
     .sl-card-city {
-      font-size: 12px; font-weight: 500; color: var(--text);
-      display: flex; align-items: center; gap: 7px;
+      font-size: 15px; font-weight: 500; color: var(--text);
+      display: flex; align-items: center; gap: 9px;
       margin-bottom: 10px;
     }
-    .sl-card-city .flag { font-size: 15px; }
+    .sl-card-city .flag-img {
+      width: 41px; height: 26px;
+      object-fit: cover;
+      display: block;
+      border-radius: 4px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.15);
+    }
+    .continent-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px; font-weight: 600;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 3px; text-transform: uppercase;
+      white-space: nowrap; pointer-events: none;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+      transform: translateX(-50%);
+    }
+
+    .sl-card-school {
+      font-size: 11px; color: var(--text); opacity: 0.55;
+      padding-left: 22px; margin-bottom: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sl-card-division {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px; letter-spacing: 2px; font-weight: 700;
+      border-radius: 2px; padding: 2px 8px;
+      display: inline-block; margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .sl-card-division.div-rumeli {
+      color: #f5c842;
+      border: 1px solid rgba(245,200,66,0.55);
+      box-shadow: 0 0 8px rgba(245,200,66,0.2);
+    }
+    .sl-card-division.div-valens {
+      color: #c084fb;
+      border: 1px solid rgba(192,132,251,0.55);
+      box-shadow: 0 0 8px rgba(192,132,251,0.2);
+    }
+    .sl-awards-hdr {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 7px; letter-spacing: 2px;
+      color: var(--cyan); opacity: 0.5;
+      text-transform: uppercase; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .sl-awards-total {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 7px; letter-spacing: 1px;
+      color: var(--bright); opacity: 0.7;
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 2px; padding: 1px 5px;
+    }
+    .sl-awards { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
+    .sl-award-row {
+      display: flex; align-items: baseline; gap: 6px;
+      font-size: 11px;
+    }
+    .sl-award-type {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 9px; font-weight: 700;
+      color: var(--cyan);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .sl-award-deans { white-space: normal; }
+    .sl-award-evt {
+      color: var(--text); opacity: 0.7;
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .sl-award-yr {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8px; color: var(--text); opacity: 0.4;
+      flex-shrink: 0;
+    }
     .sl-card-badge {
       display: inline-block;
       font-family: 'Orbitron', sans-serif;
@@ -795,6 +870,19 @@
     'Vietnam':[14.058,108.278],    'Australia':[-25.274,133.775],
   };
 
+  // Convert flag emoji → ISO 2-letter country code for flagcdn.com
+  function flagToISO(emoji) {
+    const pts = [...emoji].map(c => c.codePointAt(0));
+    if (pts.length === 2 && pts[0] >= 0x1F1E6 && pts[0] <= 0x1F1FF)
+      return pts.map(p => String.fromCharCode(p - 0x1F1E6 + 65)).join('').toLowerCase();
+    return null;
+  }
+  function flagImg(emoji, cls = 'flag-img') {
+    const iso = flagToISO(emoji);
+    if (!iso) return '';
+    return `<img class="${cls}" src="https://flagcdn.com/w160/${iso}.png" alt="${iso.toUpperCase()}" />`;
+  }
+
   // Ocean anchor points for teams with no registered location
   const OCEAN_POSITIONS = [
     { lat:  8.0, lng:-145.0 }, { lat:  2.0, lng: -28.0 },
@@ -814,15 +902,74 @@
     return [base[0] + Math.sin(angle) * r, base[1] + Math.cos(angle) * r];
   }
 
+  // ── DIVISION ASSIGNMENTS (fetched live from FTC Scout) ──────────────────────
+  const DIVISION_MAP = {};
+
+  async function fetchDivisions() {
+    try {
+      const res = await fetch(GQL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: `{
+          rumeli: eventByCode(season: 2025, code: "FPEISTRDIV") { teams { team { number } } }
+          valens: eventByCode(season: 2025, code: "FPEISTVDIV") { teams { team { number } } }
+        }` }),
+      });
+      const { data } = await res.json();
+      (data?.rumeli?.teams || []).forEach(({ team }) => DIVISION_MAP[team.number] = 'Rumeli');
+      (data?.valens?.teams || []).forEach(({ team }) => DIVISION_MAP[team.number] = 'Valens');
+    } catch (err) {
+      console.warn('Division fetch failed:', err);
+    }
+  }
+
   // ── LIVE DATA FROM FTC SCOUT ─────────────────────────────────────────────────
   let TEAMS = []; // populated async from FTC Scout on load
   let teamStatsCache = {};
+  let statsLoadPromise = Promise.resolve();
   const GQL = 'https://api.ftcscout.org/graphql';
+
+  const AWARD_LABELS = {
+    Winner: 'Winner', Finalist: 'Finalist', Inspire: 'Inspire',
+    Think: 'Think', Connect: 'Connect', Innovate: 'Innovate',
+    Design: 'Design', Motivate: 'Motivate', Control: 'Control',
+    Reach: 'Reach', Sustain: 'Sustain', Promote: 'Promote',
+    Compass: 'Compass', TopRanked: 'Top Ranked',
+    DivisionWinner: 'Div. Winner', DivisionFinalist: 'Div. Finalist',
+    ConferenceFinalist: 'Conf. Finalist',
+    JudgesChoice: "Judge's Choice",
+  };
+  const DEANS_LIST_TYPES = new Set(['DeansListWinner', 'DeansListFinalist', 'DeansListSemiFinalist']);
+
+  function awardsHtml(awards, total) {
+    if (!awards || awards.length === 0) return '';
+    const rows = awards.map(a => {
+      const isDeans = DEANS_LIST_TYPES.has(a.type);
+      let label, evtDisplay;
+      if (isDeans) {
+        label = 'FIRST Leadership Award';
+        const winner = a.personName || '';
+        evtDisplay = winner;
+      } else {
+        label = AWARD_LABELS[a.type] || a.type;
+        const evtName = a.event?.name || '';
+        evtDisplay = evtName.length > 28 ? evtName.slice(0, 26) + '…' : evtName;
+      }
+      return `<div class="sl-award-row">
+        <span class="sl-award-type${isDeans ? ' sl-award-deans' : ''}">${label}</span>
+        <span class="sl-award-evt">${evtDisplay}</span>
+      </div>`;
+    }).join('');
+    const totalStr = total != null ? `<span class="sl-awards-total">${total} this year</span>` : '';
+    return `<div class="sl-card-sep"></div>
+      <div class="sl-awards-hdr">RECENT AWARDS ${totalStr}</div>
+      <div class="sl-awards">${rows}</div>`;
+  }
 
   async function fetchEventTeams() {
     const query = `{
       eventByCode(season: 2025, code: "FPEIST") {
-        teams { team { number name location { city country } } }
+        teams { team { number name location { city state country } } }
       }
     }`;
     const res = await fetch(GQL, {
@@ -835,7 +982,8 @@
     let oceanIdx = 0;
     return data.eventByCode.teams.map(({ team }) => {
       const { number, name, location } = team;
-      const { city, country } = location;
+      const { city, state, country } = location;
+      const stateLabel = state && !/^\d+$/.test(state) && state !== city ? state : null;
 
       if (country === 'Independent' || !city.trim()) {
         const pos = OCEAN_POSITIONS[oceanIdx % OCEAN_POSITIONS.length];
@@ -849,7 +997,7 @@
       const [lat, lng] = jitteredCoords(cityKey, base);
       return {
         id: number, name,
-        city: city.trim(), country,
+        city: city.trim(), state: stateLabel, country,
         flag: COUNTRY_FLAGS[country] ?? '🏳️',
         lat, lng,
       };
@@ -861,12 +1009,14 @@
     const aliases = ids.map(n => `
       t${n}: teamByNumber(number: ${n}) {
         rookieYear
+        schoolName
         quickStats(season: 2025) {
           tot { value rank }
           auto { value }
           dc { value }
           count
         }
+        awards { type placement season personName event { name } }
       }
     `).join('');
 
@@ -882,13 +1032,18 @@
         const d = data?.[`t${id}`];
         if (!d) continue;
         const qs = d.quickStats;
+        const rawAwards = d.awards || [];
+        const recentAwards = [...rawAwards].reverse().slice(0, 4);
         teamStatsCache[id] = {
-          rookieYear: d.rookieYear,
-          npOpr:      qs?.tot?.value  != null ? Math.round(qs.tot.value)  : null,
-          worldRank:  qs?.tot?.rank   != null ? qs.tot.rank               : null,
-          worldTotal: qs?.count       != null ? qs.count                  : null,
-          autoOpr:    qs?.auto?.value != null ? Math.round(qs.auto.value) : null,
-          dcOpr:      qs?.dc?.value   != null ? Math.round(qs.dc.value)   : null,
+          rookieYear:   d.rookieYear  || null,
+          schoolName:   d.schoolName  || null,
+          npOpr:       qs?.tot?.value  != null ? Math.round(qs.tot.value)  : null,
+          worldRank:   qs?.tot?.rank   != null ? qs.tot.rank               : null,
+          worldTotal:  qs?.count       != null ? qs.count                  : null,
+          autoOpr:     qs?.auto?.value != null ? Math.round(qs.auto.value) : null,
+          dcOpr:       qs?.dc?.value   != null ? Math.round(qs.dc.value)   : null,
+          recentAwards,
+          totalAwards: rawAwards.filter(a => a.season === 2025).length,
         };
       }
     } catch (err) {
@@ -902,12 +1057,44 @@
     zoomControl: true, attributionControl: true, minZoom: 2,
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Dark base — no labels
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19,
   }).addTo(map);
+  // English-only label overlay from Esri (transparent tiles)
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+    maxZoom: 19, opacity: 0.9,
+  }).addTo(map);
+  document.querySelector('.leaflet-tile-pane').style.filter = 'brightness(1.6)';
 
   map.zoomControl.setPosition('bottomright');
+
+  // Continent name labels
+  const CONTINENT_LABELS = [
+    { name: 'North America', lat: 48,  lng: -100 },
+    { name: 'South America', lat: -15, lng: -58  },
+    { name: 'Europe',        lat: 52,  lng: 18   },
+    { name: 'Africa',        lat: 2,   lng: 22   },
+    { name: 'Asia',          lat: 45,  lng: 90   },
+    { name: 'Oceania',       lat: -25, lng: 134  },
+    { name: 'Antarctica',    lat: -75, lng: 0    },
+  ];
+  const labelPane = map.createPane('continentLabelPane');
+  labelPane.style.zIndex = 350;
+  labelPane.style.pointerEvents = 'none';
+  CONTINENT_LABELS.forEach(({ name, lat, lng }) => {
+    L.marker([lat, lng], {
+      pane: 'continentLabelPane',
+      interactive: false,
+      icon: L.divIcon({
+        className: '',
+        html: `<div class="continent-label">${name}</div>`,
+        iconSize: [0, 0],
+      }),
+    }).addTo(map);
+  });
 
   // ── MARKER FACTORY ───────────────────────────────────────────────────────────
   // state: '' | 'active' | 'spotlight'
@@ -996,8 +1183,10 @@
   let activeCity = null;
 
   async function initApp() {
+    await fetchDivisions();
+
     try {
-      TEAMS = await fetchEventTeams();
+      TEAMS = (await fetchEventTeams()).filter(t => DIVISION_MAP[t.id]);
     } catch (err) {
       console.error('Failed to load teams from FTC Scout:', err);
       TEAMS = [];
@@ -1039,7 +1228,7 @@
     });
 
     // Kick off stats fetch in background — populates teamStatsCache before spotlight opens
-    loadTeamStats(TEAMS);
+    statsLoadPromise = loadTeamStats(TEAMS);
   }
 
   initApp();
@@ -1052,6 +1241,10 @@
     const s = teamStatsCache[team.id] || {};
     const fmt = v => v != null ? v : '—';
     const rankStr = s.worldRank != null ? `#${s.worldRank}` : '—';
+    const division = DIVISION_MAP[team.id];
+    const divisionHtml = division
+      ? `<div class="sl-card-division div-${division.toLowerCase()}">${division} Division</div>`
+      : '';
 
     if (clickPopup) { map.closePopup(clickPopup); clickPopup = null; }
 
@@ -1071,30 +1264,55 @@
           <div class="sl-card-name">${team.name}</div>
           <div class="sl-card-sep"></div>
           <div class="sl-card-city">
-            <span class="flag">${team.flag}</span>${cityLine}
+            ${team.country !== 'Independent' ? flagImg(team.flag) : ''}${cityLine}
           </div>
+          ${divisionHtml}
           <div class="sl-card-sep"></div>
           <div class="sl-card-stats">
             <div class="sl-stat">
               <span class="sl-stat-lbl">World</span>
-              <span class="sl-stat-val">${rankStr}</span>
+              <span class="sl-stat-val" id="cp-${team.id}-world">${rankStr}</span>
             </div>
             <div class="sl-stat">
               <span class="sl-stat-lbl">NP&nbsp;OPR</span>
-              <span class="sl-stat-val">${fmt(s.npOpr)}</span>
+              <span class="sl-stat-val" id="cp-${team.id}-npopr">${fmt(s.npOpr)}</span>
             </div>
             <div class="sl-stat">
               <span class="sl-stat-lbl">Auto</span>
-              <span class="sl-stat-val">${fmt(s.autoOpr)}</span>
+              <span class="sl-stat-val" id="cp-${team.id}-auto">${fmt(s.autoOpr)}</span>
             </div>
             <div class="sl-stat">
               <span class="sl-stat-lbl">Teleop</span>
-              <span class="sl-stat-val">${fmt(s.dcOpr)}</span>
+              <span class="sl-stat-val" id="cp-${team.id}-dc">${fmt(s.dcOpr)}</span>
             </div>
           </div>
+          <div class="sl-card-stats" style="margin-top:6px">
+            <div class="sl-stat">
+              <span class="sl-stat-lbl">Since</span>
+              <span class="sl-stat-val" id="cp-${team.id}-rookie">${fmt(s.rookieYear)}</span>
+            </div>
+          </div>
+          <div id="cp-${team.id}-awards">${awardsHtml(s.recentAwards, s.totalAwards)}</div>
         </div>
       `)
       .openOn(map);
+
+    // If stats weren't loaded yet, patch the spans once the fetch completes
+    if (!teamStatsCache[team.id]) {
+      const tid = team.id;
+      statsLoadPromise.then(() => {
+        const cs = teamStatsCache[tid] || {};
+        const el = suffix => document.getElementById(`cp-${tid}-${suffix}`);
+        if (!el('world')) return; // popup already closed
+        el('world').textContent  = cs.worldRank  != null ? `#${cs.worldRank}` : '—';
+        el('npopr').textContent  = cs.npOpr       != null ? cs.npOpr           : '—';
+        el('auto').textContent   = cs.autoOpr     != null ? cs.autoOpr         : '—';
+        el('dc').textContent     = cs.dcOpr       != null ? cs.dcOpr           : '—';
+        el('rookie').textContent = cs.rookieYear  != null ? cs.rookieYear      : '—';
+        const awardsEl = el('awards');
+        if (awardsEl) awardsEl.innerHTML = awardsHtml(cs.recentAwards, cs.totalAwards);
+      });
+    }
 
     clickPopup.on('remove', () => {
       if (activeTeamId !== null && markerMap[activeTeamId]) {
@@ -1214,7 +1432,7 @@
 
   // ── SPOTLIGHT ─────────────────────────────────────────────────────────────────
   const SL_ZOOM     = 5;    // "country level" zoom
-  const SL_TOTAL    = 5000; // ms per team (fly + view time)
+  const SL_TOTAL    = 10000; // ms per team (fly + view time)
   const SL_FLY_SEC  = 1.4;  // flyTo duration in seconds
 
   let slActive     = false;
@@ -1289,6 +1507,10 @@
       const stats = teamStatsCache[team.id] || {};
       const fmt = v => v != null ? v : '—';
       const rankStr = stats.worldRank != null ? `#${stats.worldRank}` : '—';
+      const slDivision = DIVISION_MAP[team.id];
+      const slDivisionHtml = slDivision
+        ? `<div class="sl-card-division div-${slDivision.toLowerCase()}">${slDivision} Division</div>`
+        : '';
       const statsHtml = `
         <div class="sl-card-sep"></div>
         <div class="sl-card-stats">
@@ -1308,7 +1530,14 @@
             <span class="sl-stat-lbl">Teleop</span>
             <span class="sl-stat-val">${fmt(stats.dcOpr)}</span>
           </div>
-        </div>`;
+        </div>
+        <div class="sl-card-stats" style="margin-top:6px">
+          <div class="sl-stat">
+            <span class="sl-stat-lbl">Since</span>
+            <span class="sl-stat-val">${fmt(stats.rookieYear)}</span>
+          </div>
+        </div>
+        ${awardsHtml(stats.recentAwards, stats.totalAwards)}`;
       slPopup = L.popup({
         className: 'sl-popup',
         closeButton: false,
@@ -1325,8 +1554,9 @@
             <div class="sl-card-name">${team.name}</div>
             <div class="sl-card-sep"></div>
             <div class="sl-card-city">
-              <span class="flag">${team.flag}</span>${cityLine}
+              ${team.country !== 'Independent' ? flagImg(team.flag) : ''}${cityLine}
             </div>
+            ${slDivisionHtml}
             ${statsHtml}
           </div>
         `)
