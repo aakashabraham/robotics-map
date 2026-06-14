@@ -1487,7 +1487,12 @@
 
     // Fly to team — use world zoom for independent teams, country zoom for others
     const zoom = team.slZoom ?? SL_ZOOM;
-    map.flyTo([team.lat, team.lng], zoom, {
+    // Offset target 20% below center so the popup above the beacon sits near center
+    const mapH = map.getContainer().offsetHeight;
+    const offsetPx = mapH * 0.20;
+    const targetPoint = map.project([team.lat, team.lng], zoom).add([0, offsetPx]);
+    const offsetLatLng = map.unproject(targetPoint, zoom);
+    map.flyTo(offsetLatLng, zoom, {
       duration: SL_FLY_SEC,
       easeLinearity: 0.35,
     });
