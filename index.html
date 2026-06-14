@@ -22,6 +22,48 @@
       --border:  rgba(0, 212, 255, 0.22);
       --text:    #b8cce8;
       --bright:  #e2efff;
+
+      --header-bg-from: rgba(4,4,15,0.98);
+      --header-bg-to:   rgba(10,7,24,0.98);
+      --popup-bg:       rgba(6,9,22,0.95);
+      --sl-popup-bg:    rgba(4,6,20,0.97);
+      --bar-bg:         rgba(6,9,22,0.97);
+      --map-bg:         #03030c;
+      --attr-bg:        rgba(4,4,15,0.75);
+      --attr-text:      rgba(184,204,232,0.3);
+      --attr-link:      rgba(0,212,255,0.4);
+      --grid-c:         rgba(0,212,255,0.025);
+      --continent-c:    rgba(255,255,255,0.35);
+      --continent-glow: rgba(255,255,255,0.15);
+      --placeholder-c:  rgba(184,204,232,0.35);
+      --tile-filter:    brightness(1.6);
+    }
+
+    body.light {
+      --cyan:    #007fa8;
+      --purple:  #6020bb;
+      --magenta: #cc0044;
+      --bg:      #f0f4fa;
+      --bg2:     #e8edf6;
+      --panel:   rgba(248,251,255,0.97);
+      --border:  rgba(0,160,210,0.22);
+      --text:    #4a5878;
+      --bright:  #1a2440;
+
+      --header-bg-from: rgba(240,245,255,0.98);
+      --header-bg-to:   rgba(232,240,252,0.98);
+      --popup-bg:       rgba(248,251,255,0.97);
+      --sl-popup-bg:    rgba(246,250,255,0.98);
+      --bar-bg:         rgba(248,251,255,0.97);
+      --map-bg:         #d8e6f0;
+      --attr-bg:        rgba(240,244,252,0.85);
+      --attr-text:      rgba(74,88,120,0.65);
+      --attr-link:      rgba(0,127,168,0.7);
+      --grid-c:         rgba(0,160,210,0.04);
+      --continent-c:    rgba(20,40,80,0.22);
+      --continent-glow: rgba(20,40,80,0.08);
+      --placeholder-c:  rgba(74,88,120,0.4);
+      --tile-filter:    brightness(1.0);
     }
 
     html, body {
@@ -36,8 +78,8 @@
       content: '';
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background-image:
-        linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+        linear-gradient(var(--grid-c) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-c) 1px, transparent 1px);
       background-size: 48px 48px;
     }
 
@@ -45,7 +87,7 @@
     #header {
       position: fixed; top: 0; left: 0; right: 0;
       height: 58px; z-index: 1000;
-      background: linear-gradient(135deg, rgba(4,4,15,0.98) 0%, rgba(10,7,24,0.98) 100%);
+      background: linear-gradient(135deg, var(--header-bg-from) 0%, var(--header-bg-to) 100%);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(24px);
       display: flex; align-items: center;
@@ -81,6 +123,17 @@
       font-size: 9px; color: var(--cyan);
       letter-spacing: 4px; text-transform: uppercase; opacity: 0.75;
     }
+
+    #theme-toggle {
+      width: 32px; height: 32px;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid var(--border); border-radius: 3px;
+      color: var(--cyan); font-size: 15px;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #theme-toggle:hover { background: rgba(0,212,255,0.12); border-color: var(--cyan); }
 
     .h-stats { display: flex; gap: 12px; align-items: center; }
     .stat-card {
@@ -118,7 +171,7 @@
       color: var(--bright); font-family: 'Exo 2', sans-serif;
       font-size: 12px; width: 160px;
     }
-    .h-search input::placeholder { color: rgba(184,204,232,0.35); }
+    .h-search input::placeholder { color: var(--placeholder-c); }
     .h-search svg { opacity: 0.4; flex-shrink: 0; }
 
     /* ─── SCANLINES ──────────────────────────────── */
@@ -135,7 +188,7 @@
     #map {
       position: fixed; top: 58px; left: 0; right: 0; bottom: 0; z-index: 1;
     }
-    .leaflet-container { background: #03030c; }
+    .leaflet-container { background: var(--map-bg); }
     .leaflet-control-zoom {
       border: 1px solid var(--border) !important;
       background: var(--panel) !important;
@@ -152,11 +205,11 @@
     .leaflet-control-zoom a:last-child { border-bottom: none !important; }
     .leaflet-control-zoom a:hover { background: rgba(0,212,255,0.1) !important; }
     .leaflet-control-attribution {
-      background: rgba(4,4,15,0.75) !important;
-      color: rgba(184,204,232,0.3) !important;
+      background: var(--attr-bg) !important;
+      color: var(--attr-text) !important;
       font-size: 8px !important;
     }
-    .leaflet-control-attribution a { color: rgba(0,212,255,0.4) !important; }
+    .leaflet-control-attribution a { color: var(--attr-link) !important; }
 
     /* ─── CLUSTERS ───────────────────────────────── */
     .cluster-wrap { background: transparent; border: none; }
@@ -298,7 +351,7 @@
       padding: 5px 9px; outline: none;
       color: var(--bright); font-family: 'Exo 2', sans-serif; font-size: 11px;
     }
-    .cp-search input::placeholder { color: rgba(184,204,232,0.3); }
+    .cp-search input::placeholder { color: var(--placeholder-c); }
 
     .cp-list { flex: 1; overflow-y: auto; padding: 6px 0; }
     .cp-list::-webkit-scrollbar { width: 3px; }
@@ -376,7 +429,7 @@
 
     /* ─── LEAFLET POPUP OVERRIDE ─────────────────── */
     .leaflet-popup-content-wrapper {
-      background: rgba(6,9,22,0.95) !important;
+      background: var(--popup-bg) !important;
       border: 1px solid var(--border) !important;
       border-radius: 4px !important;
       box-shadow: 0 0 20px rgba(0,212,255,0.15) !important;
@@ -391,7 +444,7 @@
     .popup-loc  { font-size: 11px; color: var(--text); display: flex; align-items: center; gap: 6px; }
 
     .hover-tip.leaflet-tooltip {
-      background: rgba(6,9,22,0.95) !important;
+      background: var(--popup-bg) !important;
       border: 1px solid var(--border) !important;
       border-radius: 4px !important;
       box-shadow: 0 0 20px rgba(0,212,255,0.15) !important;
@@ -419,7 +472,7 @@
 
     /* ─── SPOTLIGHT POPUP ────────────────────────── */
     .sl-popup .leaflet-popup-content-wrapper {
-      background: rgba(4, 6, 20, 0.97) !important;
+      background: var(--sl-popup-bg) !important;
       border: 1px solid var(--cyan) !important;
       border-radius: 6px !important;
       box-shadow: 0 0 0 1px rgba(0,212,255,0.08),
@@ -508,10 +561,10 @@
     .continent-label {
       font-family: 'Orbitron', sans-serif;
       font-size: 11px; font-weight: 600;
-      color: rgba(255, 255, 255, 0.35);
+      color: var(--continent-c);
       letter-spacing: 3px; text-transform: uppercase;
       white-space: nowrap; pointer-events: none;
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+      text-shadow: 0 0 12px var(--continent-glow);
       transform: translateX(-50%);
     }
 
@@ -587,7 +640,7 @@
       position: fixed; bottom: 28px; left: 50%;
       transform: translateX(-50%) translateY(120px);
       z-index: 700;
-      background: rgba(6, 9, 22, 0.97);
+      background: var(--bar-bg);
       border: 1px solid var(--border); border-radius: 6px;
       padding: 10px 14px;
       display: flex; align-items: center; gap: 10px;
@@ -665,6 +718,7 @@
       </svg>
       <input type="text" id="search-input" placeholder="Search team, city, or country…" autocomplete="off" />
     </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme">☀</button>
     <div class="h-stats">
       <div class="stat-card">
         <span class="stat-num" id="stat-teams">0</span>
@@ -1057,17 +1111,46 @@
     zoomControl: true, attributionControl: true, minZoom: 2,
   });
 
-  // Dark base — no labels
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19,
-  }).addTo(map);
-  // English-only label overlay from Esri (transparent tiles)
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-    maxZoom: 19, opacity: 0.9,
-  }).addTo(map);
-  document.querySelector('.leaflet-tile-pane').style.filter = 'brightness(1.6)';
+  // Tile layers — dark and light pairs
+  const TILES = {
+    dark: {
+      base:   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd', maxZoom: 19,
+      }),
+      labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+        maxZoom: 19, opacity: 0.9,
+      }),
+    },
+    light: {
+      base:   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd', maxZoom: 19,
+      }),
+      labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+        maxZoom: 19, opacity: 0.9,
+      }),
+    },
+  };
+  let currentTheme = 'dark';
+  TILES.dark.base.addTo(map);
+  TILES.dark.labels.addTo(map);
+  const tilePane = document.querySelector('.leaflet-tile-pane');
+  tilePane.style.filter = 'brightness(1.6)';
+
+  function toggleTheme() {
+    const next = currentTheme === 'dark' ? 'light' : 'dark';
+    map.removeLayer(TILES[currentTheme].base);
+    map.removeLayer(TILES[currentTheme].labels);
+    TILES[next].base.addTo(map);
+    TILES[next].labels.addTo(map);
+    currentTheme = next;
+    document.body.classList.toggle('light', next === 'light');
+    tilePane.style.filter = next === 'dark' ? 'brightness(1.6)' : 'brightness(1.0)';
+    document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀' : '🌙';
+  }
 
   map.zoomControl.setPosition('bottomright');
 
